@@ -15,9 +15,9 @@ You will be also prompt to choose which context menu items you wish to apply.
 Packing script and all neccessary executables is as simple as creating parent folder which is named exacly the same as `.ps` script inside.<br>
 Then right-click on folder and pick `Pack with IntunewinUtil`.
 <br><br>
-![Pack](\packintuneutil.gif)
+![Pack](packintuneutil.gif)
 <br><br><br><br><br><br><br>
 To test your package just right-click on `.intunewin` file and choose
 `Run test in Sandbox`
-![Test](\testsandbox.gif)
+![Test](testsandbox.gif)
 

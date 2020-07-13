@@ -5,6 +5,7 @@ This tool is for testing Powershell Script which is packed using [Win32 Content 
 # Installing
 
 To configure tool on your device `Clone` this repo and run `Add-SandboxShell.ps1`.
+
 It will create folder - `C:\SandboxEnvironment` where all neccessary items will be stored.
 You will be also prompt to choose which context menu items you wish to apply.
 1. Run test in Sandbox

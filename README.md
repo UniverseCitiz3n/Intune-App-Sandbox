@@ -23,8 +23,36 @@ To test your package just right-click on `.intunewin` file and choose
 ![Test](testsandbox.gif)
 
 # Technical details
-Selected `.intunewin` file is pasted into Logon Command for Windows Sandbox.
-Eg. you have Restart-Device.intune, then logon command will as below
+## Host part
+Windows Sandbox file is created at location `C:\SandboxEnvironment`.
+This file contains configuration details about Sandbox.
+
+Eg.
+```xml
+<Configuration>
+<VGpu>Enable</VGpu>
+<Networking>Enable</Networking>
+<MappedFolders>
+<MappedFolder>
+<HostFolder>C:\Repos\Objectivity.Intune\Client apps - Apps\Restart-Device</HostFolder>
+<ReadOnly>true</ReadOnly>
+</MappedFolder>
+<MappedFolder>
+<HostFolder>C:\SandboxEnvironment\bin</HostFolder>
+<ReadOnly>true</ReadOnly>
+</MappedFolder>
+</MappedFolders>
+<LogonCommand>
+<Command>powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command C:\Users\WDAGUtilityAccount\Desktop\bin\Restart-Device_LogonCommand.ps1</Command>
+</LogonCommand>
+</Configuration>
+```
+
+Core eleement is Logon Command.
+This script is run after Sandbox environment starts.
+
+## Sandbox part
+Eg. you have Restart-Device.intune, then logon command will be as below
 ```powershell
 If (!(Test-Path -Path C:\Temp -PathType Container))
 {

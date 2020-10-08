@@ -4,7 +4,7 @@ param(
 )
 
 $SandboxOperatingFolder = 'C:\SandboxEnvironment'
-$SandboxFile = "$((get-item $PackagePath).BaseName).wsb"
+$SandboxFile = "$((Get-Item $PackagePath).BaseName).wsb"
 $FolderPath = Split-Path (Split-Path "$PackagePath" -Parent) -Leaf
 $FileName = (Get-Item $PackagePath).Name
 $FileNameZIP = $($FileName -replace '.intunewin', '.zip')
@@ -25,14 +25,14 @@ Function New-WSB {
         [String]$CommandtoRun
     )
 
-    New-Item -Path $SandboxOperatingFolder -Name $SandboxFile -type file -force | Out-Null
+    New-Item -Path $SandboxOperatingFolder -Name $SandboxFile -type file -Force | Out-Null
     $Config = @"
 <Configuration>
 <VGpu>Enable</VGpu>
 <Networking>Enable</Networking>
 <MappedFolders>
 <MappedFolder>
-<HostFolder>$((get-item $PackagePath).Directory)</HostFolder>
+<HostFolder>$((Get-Item $PackagePath).Directory)</HostFolder>
 <ReadOnly>true</ReadOnly>
 </MappedFolder>
 <MappedFolder>
@@ -64,14 +64,14 @@ Remove-Item -Path "$SandboxTempFolder\$FileNameZIP" -Force;
 # register script as scheduled task
 `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddMinutes(1)
 `$User = "SYSTEM"
-`$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass -command "$SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')" -NoNewWindow -NonInteractive'
+`$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass "powershell {& $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};New-Item $SandboxTempFolder\`$Lastexitcode.code -force"'
 `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
 Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
 "@
 
-New-Item -Path $SandboxOperatingFolder\bin -Name "$((get-item $PackagePath).BaseName)_LogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
+New-Item -Path $SandboxOperatingFolder\bin -Name "$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
 
-$Startup_Command = "powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command $SandboxDesktopPath\bin\$((get-item $PackagePath).BaseName)_LogonCommand.ps1"
+$Startup_Command = "powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command $SandboxDesktopPath\bin\$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1"
 
 New-WSB -CommandtoRun $Startup_Command
 

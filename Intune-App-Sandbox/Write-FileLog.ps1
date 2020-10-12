@@ -34,7 +34,7 @@
 	}
 
 	if ($Type -eq 'Error') {
-		$FilePath = $LogError
+		$FilePath = $LogFileError
 	} else {
 		$FilePath = $LogFile
 	}

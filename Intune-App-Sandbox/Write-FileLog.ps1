@@ -4,8 +4,8 @@
 		# Type can be: 'i' for Info, 'w' for Warn, 'e' for Error)]
 		[Alias('t')]
 		[Parameter()]
-		[ValidateSet('i', 'w', 'e')]
-		[System.String]$Type = 'i',
+		[ValidateSet('Info', 'Warn', 'Error')]
+		[System.String]$Type = 'Info',
 		# Message
 		[Alias('m')]
 		[Parameter()]
@@ -33,20 +33,10 @@
 		$Append = $true
 	}
 
-	if ($Type -eq 'e') {
+	if ($Type -eq 'Error') {
 		$FilePath = $LogError
 	} else {
-		$FilePath = $Log
-	}
-
-	if ($Type -eq 'i') {
-		$Type = 'Info'
-	} elseif ($Type -eq 'w') {
-		$Type = 'Warn'
-	} elseif ($Type -eq 'e') {
-		$Type = 'Error'
-	} else {
-		$Type = 'Info'
+		$FilePath = $LogFile
 	}
 
 	if ($FunctionStart -and -not $Message) {

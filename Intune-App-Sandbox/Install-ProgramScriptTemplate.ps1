@@ -1,6 +1,6 @@
 ﻿$global:ErrorActionPreference = "Stop"
 # Parameters
-$FileName = "VSCodeSetup-x64-1.46.1.exe"
+$FileName = "VSCodeUserSetup-x64-1.47.0.exe"
 $Tag = 'VSCode'
 $OperatingFolder = 'C:\Program Files (x86)\Microsoft\Temp'
 $ArgumentListInstallation = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /SP- /LOG="{0}\{1}Install.log" /MERGETASKS=!runcode' -f $OperatingFolder, $Tag

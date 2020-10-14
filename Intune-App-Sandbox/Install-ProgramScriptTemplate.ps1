@@ -21,9 +21,8 @@ function Exit-WithCode {
 	)
 
 	$host.SetShouldExit($exitcode)
-	exit
 }
-
+#######################################################################
 #Check for folder
 If (Test-Path -Path $OperatingFolder -PathType Container) {
 	Write-FileLog -FunctionStart -LogFile $LogFile

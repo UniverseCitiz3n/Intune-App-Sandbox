@@ -1,0 +1,8 @@
+<toast scenario="Reminder">
+    <visual>
+        <binding template="ToastGeneric">
+            <text>%TITLE%</text>
+            <text hint-style="body" hint-wrap="true">%BODY%</text>
+        </binding>
+    </visual>
+</toast>

@@ -14,6 +14,8 @@ $SandboxTempFolder = 'C:\Temp'
 $SandboxSharedPath = "$SandboxDesktopPath\$FolderPath"
 $FullStartupPath = "$SandboxSharedPath\$FileName"
 $FullStartupPath = """$FullStartupPath"""
+$ToastNotificationPath = "$SandboxDesktopPath\bin\"
+$ToastTitle = 'Intune App Sandbox'
 #endregion
 
 If (!(Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
@@ -50,6 +52,7 @@ Function New-WSB {
 
 
 $ScriptBlock = @"
+New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Pre-configurations and file decoding initiated'
 If (!(Test-Path -Path $SandboxTempFolder -PathType Container))
 {
 	New-Item -Path $SandboxTempFolder -ItemType Directory
@@ -60,18 +63,27 @@ Copy-Item -Path $FullStartupPath -Destination $SandboxTempFolder
 Rename-Item -Path "$SandboxTempFolder\$FileName.decoded" -NewName `'$FileNameZIP`' -Force;
 Expand-Archive -Path "$SandboxTempFolder\$FileNameZIP" -Destination $SandboxTempFolder -Force;
 Remove-Item -Path "$SandboxTempFolder\$FileNameZIP" -Force;
-
+New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Decoding finished!'
 # register script as scheduled task
-`$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddMinutes(1)
+`$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
 `$User = "SYSTEM"
-`$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass "powershell {& $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};New-Item $SandboxTempFolder\`$Lastexitcode.code -force"'
+`$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};& $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};New-Item $SandboxTempFolder\`$Lastexitcode.code -force;New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
 `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
 Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
 "@
 
 New-Item -Path $SandboxOperatingFolder\bin -Name "$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
 
-$Startup_Command = "powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command $SandboxDesktopPath\bin\$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1"
+$Scriptblock = @"
+Set-ExecutionPolicy Bypass -Force;
+new-item $PSHOME\Profile.ps1;
+Set-Content -Path $PSHOME\Profile.ps1 -Value '. C:\Users\WDAGUtilityAccount\Desktop\bin\New-ToastNotification.ps1';
+powershell -file '$SandboxDesktopPath\bin\$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1'
+"@
+
+New-Item -Path $SandboxOperatingFolder\bin -Name "$((Get-Item $PackagePath).BaseName)_PreLogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
+
+$Startup_Command = "powershell.exe -WindowStyle Hidden -executionpolicy bypass -command $SandboxDesktopPath\bin\$((Get-Item $PackagePath).BaseName)_PreLogonCommand.ps1"
 
 New-WSB -CommandtoRun $Startup_Command
 

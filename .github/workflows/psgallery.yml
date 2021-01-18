@@ -20,7 +20,7 @@ jobs:
     - name: Lint with PSScriptAnalyzer
       shell: pwsh
       run: |
-            Invoke-ScriptAnalyzer -Path .\Intune-App-Sandbox\Public\*.ps1 -Recurse -Outvariable issues -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingF
+            Invoke-ScriptAnalyzer -Path .\Intune-App-Sandbox\Public\*.ps1 -Recurse -Outvariable issues -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions
             $errors   = $issues.Where({$_.Severity -eq 'Error'})
             $warnings = $issues.Where({$_.Severity -eq 'Warning'})
             if ($errors) {

@@ -1,4 +1,4 @@
-function Update-SandboxShell {
+﻿function Update-SandboxShell {
 	<#
 .SYNOPSIS
 This tool is for testing Powershell Script which is packed using Win32 Content Prep Tool for installing software using Win32 Deployment profile in Intune.
@@ -11,7 +11,7 @@ Such package should contain Install-Script.ps1 and all the neccessary binaries, 
 To correctly create intunewin package, please name parent folder as the same as *.ps1 script within!
 
 .NOTES
-� 2021 Maciej Horbacz
+© 2021 Maciej Horbacz
 #>
 
 	If (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {

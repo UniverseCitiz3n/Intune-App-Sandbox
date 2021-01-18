@@ -13,11 +13,13 @@ jobs:
       run: |
         Invoke-Pester .\tests\Unit.Tests.ps1 -Passthru     
     - name: Install PSScriptAnalyzer module
+      if: success()
       shell: pwsh
       run: |
             Set-PSRepository PSGallery -InstallationPolicy Trusted
             Install-Module PSScriptAnalyzer -ErrorAction Stop
     - name: Lint with PSScriptAnalyzer
+      if: success()
       shell: pwsh
       run: |
             Invoke-ScriptAnalyzer -Path .\Intune-App-Sandbox\Public\*.ps1 -Recurse -Outvariable issues -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions

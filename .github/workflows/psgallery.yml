@@ -1,4 +1,4 @@
-name: Test PowerShell on Ubuntu
+name: Test PowerShell on Windows
 on: push
 
 jobs:

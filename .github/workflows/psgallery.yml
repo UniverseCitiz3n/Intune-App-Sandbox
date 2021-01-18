@@ -4,18 +4,18 @@ on: push
 jobs:
   pester-test:
     name: Pester test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - name: Check out repository code
       uses: actions/checkout@v2
     - name: Perform a Pester test from the Tests.ps1 file
       shell: pwsh
       run: |
-        Invoke-Pester /tests/Unit.Tests.ps1 -Passthru
+        Invoke-Pester .\tests\Unit.Tests.ps1 -Passthru
         
   PSScriptAnalyzer:
     name: Install and run PSScriptAnalyzer
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
     - name: Install PSScriptAnalyzer module

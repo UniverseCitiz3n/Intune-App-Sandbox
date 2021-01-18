@@ -11,7 +11,7 @@ Such package should contain Install-Script.ps1 and all the neccessary binaries, 
 To correctly create intunewin package, please name parent folder as the same as *.ps1 script within!
 
 .NOTES
-Â© 2021 Maciej Horbacz
+© 2021 Maciej Horbacz
 #>
 
 	If (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {

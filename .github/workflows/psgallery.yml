@@ -3,7 +3,7 @@ on: push
 
 jobs:
   pester-test:
-    name: Pester test
+    name: Pester test and ScriptAnalyzer
     runs-on: windows-latest
     steps:
     - name: Check out repository code
@@ -11,13 +11,7 @@ jobs:
     - name: Perform a Pester test from the Tests.ps1 file
       shell: pwsh
       run: |
-        Invoke-Pester .\tests\Unit.Tests.ps1 -Passthru
-        
-  PSScriptAnalyzer:
-    name: Install and run PSScriptAnalyzer
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
+        Invoke-Pester .\tests\Unit.Tests.ps1 -Passthru     
     - name: Install PSScriptAnalyzer module
       shell: pwsh
       run: |
@@ -26,7 +20,7 @@ jobs:
     - name: Lint with PSScriptAnalyzer
       shell: pwsh
       run: |
-            Invoke-ScriptAnalyzer -Path .\Intune-App-Sandbox\Public\*.ps1 -Recurse -Outvariable issues
+            Invoke-ScriptAnalyzer -Path .\Intune-App-Sandbox\Public\*.ps1 -Recurse -Outvariable issues -ExcludeRule PSAvoidUsingWriteHost
             $errors   = $issues.Where({$_.Severity -eq 'Error'})
             $warnings = $issues.Where({$_.Severity -eq 'Warning'})
             if ($errors) {

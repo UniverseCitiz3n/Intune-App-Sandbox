@@ -1,4 +1,4 @@
-function Add-SandboxShell {
+﻿function Add-SandboxShell {
     <#
 .SYNOPSIS
 This tool is for testing Powershell Script which is packed using Win32 Content Prep Tool for installing software using Win32 Deployment profile in Intune.

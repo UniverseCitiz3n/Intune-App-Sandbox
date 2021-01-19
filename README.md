@@ -18,7 +18,11 @@ You will be also prompt to choose which context menu items you wish to apply.
 
 # Updating
 
+```powershell
+Update-Module -Name Intune-App-Sandbox
+```
 Run `Update-SandboxShell`
+
 # How to use
 Packing script and all neccessary executables is as simple as creating parent folder which is named exacly the same as `.ps1` script inside.<br>
 Then right-click on folder and pick `Pack with IntunewinUtil`.

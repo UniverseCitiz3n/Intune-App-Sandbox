@@ -45,7 +45,7 @@ Eg.
 <Networking>Enable</Networking>
 <MappedFolders>
 <MappedFolder>
-<HostFolder>C:\Repos\Objectivity.Intune\Client apps - Apps\Restart-Device</HostFolder>
+<HostFolder>C:\Intune\Client apps - Apps\Restart-Device</HostFolder>
 <ReadOnly>true</ReadOnly>
 </MappedFolder>
 <MappedFolder>

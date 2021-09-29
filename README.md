@@ -33,6 +33,15 @@ To test your package just right-click on `.intunewin` file and choose
 `Run test in Sandbox`
 ![Test](testsandbox.gif)
 
+# New feature - Run test with detection
+With version 1.3.0 I've introduced new feature that allows to test your installation and test your custom detection script.
+To do that you need to have script file in package location and its name must follow the same principal as installation script name but with `_Detection` and the end:
+
+**Install-ProgramScriptTemplate_Detection.ps1**
+
+Detection script must end with exit code **1** if app is not found and **0** if found.
+To use this new feature click on orange/gold item in cotext menu - you will know which one 😉
+
 # Technical details
 ## Template script
 At `SandboxEnvironment` location you will find my template installation script.

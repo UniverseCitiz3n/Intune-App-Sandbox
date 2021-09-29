@@ -39,7 +39,7 @@ To correctly create intunewin package, please name parent folder as the same as 
 	$SandboxOperatingFolder = 'C:\SandboxEnvironment\bin'
 	[string] $module = (Get-Command -Name $MyInvocation.MyCommand -All).Source
 	$PathModule = (Get-Module -Name $module.Trim() | Select-Object ModuleBase -First 1).ModuleBase
-	If (!(Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
+	If ((Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
 		Write-Host 'Folder found!' -ForegroundColor Green
 		Write-Host "Copying crucial files to $SandboxOperatingFolder" -ForegroundColor Yellow
 		Copy-Item -Path $PathModule\Configuration\* -Recurse -Destination $SandboxOperatingFolder -Force

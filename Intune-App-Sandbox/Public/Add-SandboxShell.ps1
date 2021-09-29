@@ -24,6 +24,12 @@ To correctly create intunewin package, please name parent folder as the same as 
     Clear-Host
     Write-Host 'Thanks for using this tool!' -ForegroundColor Green
     Write-Host 'Starting configuration process...' -ForegroundColor Yellow
+    Write-Host 'Checking for Sandbox feature...' -ForegroundColor Yellow
+    $SandboxFeature = Get-WindowsOptionalFeature -FeatureName 'Containers-DisposableClientVM' -Online
+    if($SandboxFeature.state -ne 'Enabled'){
+        Write-Host 'Sandbox feature is disabled!! Enabling feature' -ForegroundColor Red
+        $sandboxfeature | Enable-WindowsOptionalFeature -Online
+    }
     Write-Host 'Checking for operating folder...' -ForegroundColor Yellow -NoNewline
     $SandboxOperatingFolder = 'C:\SandboxEnvironment\bin'
     [string] $module = (Get-Command -Name $MyInvocation.MyCommand -All).Source
@@ -63,6 +69,18 @@ Contex menu options:
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
             }
+            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
+                Write-Host 'Context menu item not present.' -ForegroundColor Green
+                New-Item -Path HKCR_SD:\ -Name '.intunewin'
+                New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
+                Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
+                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox with Detection'
+                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name icon -PropertyType 'String' -Value "$SandboxOperatingFolder\sandbox_detection.ico"
+                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name 'Command'
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxOperatingFolder\Invoke-Test.ps1 -PackagePath `"%V`" -DetectionScript `$true"
+            } else {
+                Write-Host 'Context menu item already present!' -ForegroundColor Yellow
+            }
         }
         2 {
             If (!(Test-Path -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command')) {
@@ -88,6 +106,18 @@ Contex menu options:
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
             }
+            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
+                Write-Host 'Context menu item not present.' -ForegroundColor Green
+                New-Item -Path HKCR_SD:\ -Name '.intunewin'
+                New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
+                Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
+                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox with Detection'
+                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name icon -PropertyType 'String' -Value "$SandboxOperatingFolder\sandbox_detection.ico"
+                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name 'Command'
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxOperatingFolder\Invoke-Test.ps1 -PackagePath `"%V`" -DetectionScript `$true"
+            } else {
+                Write-Host 'Context menu item already present!' -ForegroundColor Yellow
+            }
             If (!(Test-Path -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command')) {
                 Write-Host 'Context menu item not present.' -ForegroundColor Green
                 New-Item -Path HKCR_SD:\Directory\Shell\ -Name 'Pack with IntunewinUtil'
@@ -99,7 +129,7 @@ Contex menu options:
             }
         }
         Default {
-            Write-Host 'Wrong option! Bye...' -ForegroundColor Red
+            Write-Host 'Wrong option! Try again...' -ForegroundColor Red
             Break
         }
     }

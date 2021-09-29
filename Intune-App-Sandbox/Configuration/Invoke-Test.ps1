@@ -1,15 +1,17 @@
 #params
 param(
-    [String]$PackagePath
+    [String] $PackagePath,
+    [Bool] $DetectionScript = $false
 )
 
 $SandboxOperatingFolder = 'C:\SandboxEnvironment'
 $SandboxFile = "$((Get-Item $PackagePath).BaseName).wsb"
 $FolderPath = Split-Path (Split-Path "$PackagePath" -Parent) -Leaf
 $FileName = (Get-Item $PackagePath).Name
+$DetectionScriptFile = "$((Get-Item $PackagePath).Name.Replace('.intunewin',''))_Detection.ps1"
 $FileNameZIP = $($FileName -replace '.intunewin', '.zip')
 
-$SandboxDesktopPath = "C:\Users\WDAGUtilityAccount\Desktop"
+$SandboxDesktopPath = 'C:\Users\WDAGUtilityAccount\Desktop'
 $SandboxTempFolder = 'C:\Temp'
 $SandboxSharedPath = "$SandboxDesktopPath\$FolderPath"
 $FullStartupPath = "$SandboxSharedPath\$FileName"
@@ -64,12 +66,41 @@ Rename-Item -Path "$SandboxTempFolder\$FileName.decoded" -NewName `'$FileNameZIP
 Expand-Archive -Path "$SandboxTempFolder\$FileNameZIP" -Destination $SandboxTempFolder -Force;
 Remove-Item -Path "$SandboxTempFolder\$FileNameZIP" -Force;
 New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Decoding finished!'
-# register script as scheduled task
-`$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
-`$User = "SYSTEM"
-`$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};& $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};New-Item $SandboxTempFolder\`$Lastexitcode.code -force;New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
-`$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
-Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+# register detection script as scheduled task
+if(`$$DetectionScript)
+{
+    # register script as scheduled task
+    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
+    & $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};`
+    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
+    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""";`
+    Start-ScheduledTask -TaskName {Detect App}"'
+    `$User = "SYSTEM"
+    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
+    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
+    Register-ScheduledTask -TaskName "Install App" -User `$User -Action `$Action -Settings `$Settings -Force
+    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Detecting software};`
+    & $SandboxTempFolder\$DetectionScriptFile};`
+    New-Item $SandboxTempFolder\`$LastExitcode.detectioncode -force;`
+    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Detection completed with code: `$LASTEXITCODE"""`
+    if(`$LASTEXITCODE -eq 1){Start-ScheduledTask -TaskName {Install app}}"'
+    `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
+    `$User = "SYSTEM"
+    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
+    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
+    Register-ScheduledTask -TaskName "Detect App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+
+}else{
+    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
+    & $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};`
+    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
+    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
+    `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
+    `$User = "SYSTEM"
+    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
+    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
+    Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+}
 "@
 
 New-Item -Path $SandboxOperatingFolder\bin -Name "$((Get-Item $PackagePath).BaseName)_LogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null

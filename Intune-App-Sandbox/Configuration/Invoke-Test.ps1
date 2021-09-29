@@ -72,7 +72,9 @@ if(`$$DetectionScript)
     # register script as scheduled task
     `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
     & $SandboxTempFolder\$($FileName -replace '.intunewin','.ps1')};`
-    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
+    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
+    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""";`
+    Start-ScheduledTask -TaskName {Detect App}"'
     `$User = "SYSTEM"
     `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
     `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries

@@ -1,7 +1,7 @@
 ﻿# Parameters
-$FileName = "VSCodeSetup-x64-1.50.0.exe"
+$FileName = 'VSCodeSetup-x64-1.50.0.exe'
 $Tag = 'VSCode'
-$OperatingFolder = 'C:\Program Files (x86)\Microsoft\Temp'
+$OperatingFolder = 'C:\ProgramData\Microsoft\IntuneManagementExtension\Logs'
 $ArgumentListInstallation = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /SP- /LOG="{0}\{1}Install.log" /MERGETASKS=!runcode' -f $OperatingFolder, $Tag
 $InstallFailCode = 1707
 $InstallSuccessCode = 1641
@@ -46,9 +46,9 @@ Try {
 		Exit-WithCode -exitcode $InstallSuccessCode
 	}
 } Catch {
-	Write-FileLog -Type Error -Message "Script ERROR" -LogFileError $LogFileError
+	Write-FileLog -Type Error -Message 'Script ERROR' -LogFileError $LogFileError
 	$_ | Out-File -FilePath $LogFileError -Append -Encoding ASCII
-	Write-FileLog -Type Warn -Message "Script TERMINATION" -LogFileError $LogFileError
+	Write-FileLog -Type Warn -Message 'Script TERMINATION' -LogFileError $LogFileError
 	Write-FileLog -Type Warn -Message "Exitcode $InstallFailCode" -LogFileError $LogFileError
 	Exit-WithCode -exitcode $InstallFailCode
 }

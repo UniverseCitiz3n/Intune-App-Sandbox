@@ -23,6 +23,7 @@ To correctly create intunewin package, please name parent folder as the same as 
         Write-Host 'Starting update process...' -ForegroundColor Yellow
         $SandboxRootFolder = 'C:\SandboxEnvironment'
         $SandboxCoreFolder = Join-Path $SandboxRootFolder 'core'
+        $SandboxAppsFolder = Join-Path $SandboxRootFolder 'apps'
         If ((Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command')) {
                 If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
                         Write-Host 'Context menu item not present.' -ForegroundColor Green
@@ -50,9 +51,6 @@ To correctly create intunewin package, please name parent folder as the same as 
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
         }
         Write-Host 'Checking for operating folders...' -ForegroundColor Yellow -NoNewline
-        $SandboxRootFolder = 'C:\SandboxEnvironment'
-        $SandboxCoreFolder = Join-Path $SandboxRootFolder 'core'
-        $SandboxAppsFolder = Join-Path $SandboxRootFolder 'apps'
         [string] $module = (Get-Command -Name $MyInvocation.MyCommand -All).Source
         $PathModule = (Get-Module -Name $module.Trim() | Select-Object ModuleBase -First 1).ModuleBase
         If ((Test-Path -Path $SandboxCoreFolder -PathType Container)) {

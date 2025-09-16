@@ -89,32 +89,32 @@ if(`$$DetectionScript)
     & $SandboxTempFolder\$FileNameRun};`
     New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
     New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""";`
-    Start-ScheduledTask -TaskName {Detect App}; Unregister-ScheduledTask -TaskName {Install App} -Confirm:$false"'
+    Start-ScheduledTask -TaskName {Detect app}; Unregister-ScheduledTask -TaskName {Install app} -Confirm:$false"'
     `$User = "SYSTEM"
     `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
     `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries -StartWhenAvailable:`$false
-    Register-ScheduledTask -TaskName "Install App" -User `$User -Action `$Action -Settings `$Settings -Force
+    Register-ScheduledTask -TaskName "Install app" -User `$User -Action `$Action -Settings `$Settings -Force
     `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Detecting software};`
     & $SandboxTempFolder\$DetectionScriptFile};`
     New-Item $SandboxTempFolder\`$LastExitcode.detectioncode -force;`
     New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Detection completed with code: `$LASTEXITCODE"""`
-    if(`$LASTEXITCODE -eq 1){Start-ScheduledTask -TaskName {Install app}}; Unregister-ScheduledTask -TaskName {Detect App} -Confirm:$false"'
+    if(`$LASTEXITCODE -eq 1){Start-ScheduledTask -TaskName {Install app}}; Unregister-ScheduledTask -TaskName {Detect app} -Confirm:$false"'
     `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
     `$User = "SYSTEM"
     `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
     `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries -StartWhenAvailable:`$false
-    Register-ScheduledTask -TaskName "Detect App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+    Register-ScheduledTask -TaskName "Detect app" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
 
 }else{
     `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
     & $SandboxTempFolder\$FileNameRun};`
     New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
-    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE"""; Unregister-ScheduledTask -TaskName {Install App} -Confirm:$false"'
+    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE"""; Unregister-ScheduledTask -TaskName {Install app} -Confirm:$false"'
     `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
     `$User = "SYSTEM"
     `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
     `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries -StartWhenAvailable:`$false
-    Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+    Register-ScheduledTask -TaskName "Install app" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
 }
 "@
 

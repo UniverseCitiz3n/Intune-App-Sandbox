@@ -33,8 +33,9 @@ New-Item -Path $AppFolder -Name "$PackageName`_LogonCommand.ps1" -ItemType File 
 
 $Scriptblock = @"
 Set-ExecutionPolicy Bypass -Force;
-new-item $PSHOME\Profile.ps1;
+New-Item -Path $PSHOME\Profile.ps1 -ItemType File -Force | Out-Null;
 Set-Content -Path $PSHOME\Profile.ps1 -Value '. C:\Users\WDAGUtilityAccount\Desktop\core\New-ToastNotification.ps1';
+& 'C:\Users\WDAGUtilityAccount\Desktop\core\Install-Winget.ps1';
 powershell -file '$SandboxAppDesktopPath\$PackageName`_LogonCommand.ps1'
 "@
 

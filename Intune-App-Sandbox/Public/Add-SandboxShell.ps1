@@ -34,38 +34,76 @@ To correctly create intunewin package, please name parent folder as the same as 
     $SandboxRootFolder = 'C:\SandboxEnvironment'
     $SandboxCoreFolder = Join-Path $SandboxRootFolder 'core'
     $SandboxAppsFolder = Join-Path $SandboxRootFolder 'apps'
-    [string] $module = (Get-Command -Name $MyInvocation.MyCommand -All).Source
-    $PathModule = (Get-Module -Name $module.Trim() | Select-Object ModuleBase -First 1).ModuleBase
-    If (!(Test-Path -Path $SandboxCoreFolder -PathType Container)) {
+    try {
+        $PathModule = Resolve-SandboxModuleRoot -InvocationInfo $MyInvocation -ScriptRoot $PSScriptRoot
+    } catch {
+        Write-Error $_
+        return
+    }
+    $ConfigurationSource = Join-Path -Path $PathModule -ChildPath 'Configuration'
+    $HelpersSource = Join-Path -Path $PathModule -ChildPath 'Helpers'
+    $PowerShellExecutable = Join-Path -Path $env:SystemRoot -ChildPath 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $InvokeTestPath = Join-Path -Path $SandboxCoreFolder -ChildPath 'Invoke-Test.ps1'
+    $InvokeIntuneWinPath = Join-Path -Path $SandboxCoreFolder -ChildPath 'Invoke-IntunewinUtil.ps1'
+    $InvokeTestCommand = '{0} -executionpolicy bypass -command {1} -PackagePath "%V"' -f $PowerShellExecutable, $InvokeTestPath
+    $InvokeTestWingetCommand = '{0} -executionpolicy bypass -command {1} -PackagePath "%V" -EnableWinget' -f $PowerShellExecutable, $InvokeTestPath
+    $InvokeIntuneWinCommand = '{0} -executionpolicy bypass -file {1} -PackagePath "%V"' -f $PowerShellExecutable, $InvokeIntuneWinPath
+    $coreExists = Test-Path -Path $SandboxCoreFolder -PathType Container
+    if (-not $coreExists) {
         Start-Sleep 2
         Write-Host 'Not found!' -ForegroundColor Red
         Write-Host 'Adding operating folders...' -ForegroundColor Yellow
+    }
+
+    if (-not (Test-Path -Path $SandboxRootFolder -PathType Container)) {
+        New-Item -Path $SandboxRootFolder -ItemType Directory -Force | Out-Null
+    }
+
+    if (-not $coreExists) {
         New-Item -Path $SandboxCoreFolder -ItemType Directory -Force | Out-Null
+    }
+
+    if (-not (Test-Path -Path $SandboxAppsFolder -PathType Container)) {
         New-Item -Path $SandboxAppsFolder -ItemType Directory -Force | Out-Null
+    }
+
+    if (-not $coreExists) {
         Start-Sleep 1
         Write-Host 'Folders found!' -ForegroundColor Green
-        Write-Host "Copying crucial files to $SandboxCoreFolder" -ForegroundColor Yellow
-        Copy-Item -Path $PathModule\Configuration\* -Recurse -Destination $SandboxCoreFolder -Force
-        Write-Host "Copying helpers files to $SandboxRootFolder" -ForegroundColor Yellow
-        Copy-Item -Path $PathModule\Helpers\* -Recurse -Destination $SandboxRootFolder -Force
     } else {
-        if (!(Test-Path -Path $SandboxAppsFolder -PathType Container)) {
-            New-Item -Path $SandboxAppsFolder -ItemType Directory -Force | Out-Null
-        }
+        Write-Host 'Folders ready.' -ForegroundColor Green
     }
+
+    if (-not (Test-Path -Path $ConfigurationSource -PathType Container)) {
+        Write-Error "Configuration source folder not found at '$ConfigurationSource'."
+        return
+    }
+
+    if (-not (Test-Path -Path $HelpersSource -PathType Container)) {
+        Write-Error "Helpers source folder not found at '$HelpersSource'."
+        return
+    }
+
+    Write-Host "Copying crucial files to $SandboxCoreFolder" -ForegroundColor Yellow
+    Copy-Item -Path (Join-Path -Path $ConfigurationSource -ChildPath '*') -Recurse -Destination $SandboxCoreFolder -Force
+
+    Write-Host "Copying helpers files to $SandboxRootFolder" -ForegroundColor Yellow
+    Copy-Item -Path (Join-Path -Path $HelpersSource -ChildPath '*') -Recurse -Destination $SandboxRootFolder -Force
     Write-Host "
-Contex menu options:
-1 - Only 'Run test in Sandbox'
-2 - Only 'Pack with IntunewinUtil'
-3 - Both
-4 - Only 'Run test in Sandbox Winget'
-5 - All
+Context menu options:
+1 - Add '.intunewin' test entries (standard + WinGet enabled)
+2 - Add 'Pack with IntunewinUtil'
+3 - Add test and pack entries
 " -ForegroundColor Yellow
     Write-Host 'Please specify your choice: ' -ForegroundColor Yellow -NoNewline
     $Option = Read-Host
     New-PSDrive -PSProvider registry -Root HKEY_CLASSES_ROOT -Name HKCR_SD | Out-Null
+    if (Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection') {
+        Write-Host "Removing legacy 'Run test in Sandbox with Detection' entry" -ForegroundColor Yellow
+        Remove-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Recurse -Force -ErrorAction SilentlyContinue
+    }
     switch ($Option) {
-        1 {
+        3 {
             If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command')) {
                 Write-Host 'Context menu item not present.' -ForegroundColor Green
                 New-Item -Path HKCR_SD:\ -Name '.intunewin'
@@ -74,21 +112,21 @@ Contex menu options:
                 New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox'
                 New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
                 New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `"%V`""
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command' -Value $InvokeTestCommand
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
             }
-            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
+            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)\Command')) {
                 Write-Host 'Context menu item not present.' -ForegroundColor Green
                 New-Item -Path HKCR_SD:\ -Name '.intunewin'
                 New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
                 Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
-                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox with Detection'
-                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox_detection.ico"
-                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `"%V`" -DetectionScript `$true"
+                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox (WinGet enabled)'
+                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
+                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)' -Name 'Command'
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)\Command' -Value $InvokeTestWingetCommand
             } else {
-                Write-Host 'Context menu item already present!' -ForegroundColor Yellow
+                Write-Host 'WinGet-enabled context menu item already present!' -ForegroundColor Yellow
             }
         }
         2 {
@@ -97,7 +135,7 @@ Contex menu options:
                 New-Item -Path HKCR_SD:\Directory\Shell\ -Name 'Pack with IntunewinUtil'
                 New-ItemProperty -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\intunewin-Box-icon.ico"
                 New-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file $SandboxCoreFolder\Invoke-IntunewinUtil.ps1 -PackagePath `"%V`""
+                Set-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command' -Value $InvokeIntuneWinCommand
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
             }
@@ -111,83 +149,30 @@ Contex menu options:
                 New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox'
                 New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
                 New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `"%V`""
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command' -Value $InvokeTestCommand
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
             }
-            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
+            If (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)\Command')) {
                 Write-Host 'Context menu item not present.' -ForegroundColor Green
                 New-Item -Path HKCR_SD:\ -Name '.intunewin'
                 New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
                 Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
-                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox with Detection'
-                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox_detection.ico"
-                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `"%V`" -DetectionScript `$true"
+                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox (WinGet enabled)'
+                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
+                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)' -Name 'Command'
+                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox (WinGet enabled)\Command' -Value $InvokeTestWingetCommand
             } else {
-                Write-Host 'Context menu item already present!' -ForegroundColor Yellow
+                Write-Host 'WinGet-enabled context menu item already present!' -ForegroundColor Yellow
             }
             If (!(Test-Path -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command')) {
                 Write-Host 'Context menu item not present.' -ForegroundColor Green
                 New-Item -Path HKCR_SD:\Directory\Shell\ -Name 'Pack with IntunewinUtil'
                 New-ItemProperty -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\intunewin-Box-icon.ico"
                 New-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file $SandboxCoreFolder\Invoke-IntunewinUtil.ps1 -PackagePath `"%V`""
+                Set-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command' -Value $InvokeIntuneWinCommand
             } else {
                 Write-Host 'Context menu item already present!' -ForegroundColor Yellow
-            }
-        }
-        4 {
-            If (!(Test-Path -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget\Command')) {
-                Write-Host 'Context menu item not present.' -ForegroundColor Green
-                New-Item -Path HKCR_SD:\ -Name '.json' -ErrorAction SilentlyContinue
-                New-Item -Path HKCR_SD:\.json -Name 'Shell' -ErrorAction SilentlyContinue
-                Set-Item -Path HKCR_SD:\.json\Shell -Value Open
-                New-Item -Path HKCR_SD:\.json\Shell -Name 'Run test in Sandbox Winget'
-                New-ItemProperty -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
-                New-Item -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file $SandboxCoreFolder\Invoke-Winget.ps1 -PackagePath `\"%V`\""
-            } else {
-                Write-Host 'Context menu item already present!' -ForegroundColor Yellow
-            }
-        }
-        5 {
-            if (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command')) {
-                Write-Host 'Context menu item not present.' -ForegroundColor Green
-                New-Item -Path HKCR_SD:\ -Name '.intunewin'
-                New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
-                Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
-                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox'
-                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
-                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `\"%V`\""
-            }
-            if (!(Test-Path -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command')) {
-                Write-Host 'Context menu item not present.' -ForegroundColor Green
-                New-Item -Path HKCR_SD:\ -Name '.intunewin'
-                New-Item -Path HKCR_SD:\.intunewin -Name 'Shell'
-                Set-Item -Path HKCR_SD:\.intunewin\Shell -Value Open
-                New-Item -Path HKCR_SD:\.intunewin\Shell -Name 'Run test in Sandbox with Detection'
-                New-ItemProperty -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox_detection.ico"
-                New-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.intunewin\Shell\Run test in Sandbox with Detection\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -command $SandboxCoreFolder\Invoke-Test.ps1 -PackagePath `\"%V`\" -DetectionScript `$true"
-            }
-            if (!(Test-Path -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command')) {
-                Write-Host 'Context menu item not present.' -ForegroundColor Green
-                New-Item -Path HKCR_SD:\Directory\Shell\ -Name 'Pack with IntunewinUtil'
-                New-ItemProperty -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\intunewin-Box-icon.ico"
-                New-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\Directory\Shell\Pack with IntunewinUtil\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file $SandboxCoreFolder\Invoke-IntunewinUtil.ps1 -PackagePath `\"%V`\""
-            }
-            if (!(Test-Path -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget\Command')) {
-                Write-Host 'Context menu item not present.' -ForegroundColor Green
-                New-Item -Path HKCR_SD:\ -Name '.json' -ErrorAction SilentlyContinue
-                New-Item -Path HKCR_SD:\.json -Name 'Shell' -ErrorAction SilentlyContinue
-                Set-Item -Path HKCR_SD:\.json\Shell -Value Open
-                New-Item -Path HKCR_SD:\.json\Shell -Name 'Run test in Sandbox Winget'
-                New-ItemProperty -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget' -Name icon -PropertyType 'String' -Value "$SandboxCoreFolder\sandbox.ico"
-                New-Item -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget' -Name 'Command'
-                Set-Item -Path 'HKCR_SD:\.json\Shell\Run test in Sandbox Winget\Command' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file $SandboxCoreFolder\Invoke-Winget.ps1 -PackagePath `\"%V`\""
             }
         }
         Default {

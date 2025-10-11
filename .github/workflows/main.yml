@@ -9,6 +9,17 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.3.1
+    - name: Build IntuneSandboxCmd COM server
+      shell: pwsh
+      run: |
+        msbuild .\build\IntuneSandboxCmd\IntuneSandboxCmd.sln /p:Configuration=Release /p:Platform=x64
+        $buildOutput = Join-Path -Path '.\build\IntuneSandboxCmd\x64\Release' -ChildPath 'IntuneSandboxCmd.dll'
+        if (-not (Test-Path -Path $buildOutput -PathType Leaf)) {
+          throw "Expected COM server output not found at '$buildOutput'."
+        }
+        Copy-Item -Path $buildOutput -Destination '.\Intune-App-Sandbox\Configuration\IntuneSandboxCmd.dll' -Force
     - name: Build and publish
       env:
         NUGET_KEY: ${{ secrets.NUGET_KEY }}

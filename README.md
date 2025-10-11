@@ -10,11 +10,10 @@ Install-Module -Name Intune-App-Sandbox
 ```
 To configure tool on your device run `Add-SandboxShell`.
 
-It will create folder - `C:\SandboxEnvironment` where all neccessary items will be stored.
-You will be also prompt to choose which context menu items you wish to apply.
-1. Run test in Sandbox
-1. Pack with IntunewinUtil
-1. Both
+It will create folder - `C:\SandboxEnvironment` where all neccessary items will be stored and register an **Intune-App-Sandbox** entry in the modern Windows Explorer context menu. The command exposes the following actions automatically:
+
+* `Run test in Sandbox` and `Run test in Sandbox (WinGet enabled)` when a `.intunewin` package is selected.
+* `Pack with IntunewinUtil` when a directory is selected.
 
 # Updating
 
@@ -23,15 +22,17 @@ Update-Module -Name Intune-App-Sandbox
 ```
 Run `Update-SandboxShell`
 
+## Building the Explorer command handler
+
+The Windows Explorer integration is implemented by the `IntuneSandboxCmd` ATL COM server located in `build/IntuneSandboxCmd`. Build the `IntuneSandboxCmd.sln` solution for the **x64** platform (Debug or Release) on a Windows machine. Copy the resulting `IntuneSandboxCmd.dll` into the module's `Intune-App-Sandbox\Configuration` folder before running `Add-SandboxShell` or `Update-SandboxShell` so the deployment functions can copy the DLL to `C:\SandboxEnvironment\core` and register the handler.
+
 # How to use
 Packing script and all neccessary executables is as simple as creating parent folder which is named exacly the same as `.ps1` script inside.<br>
 Then right-click on folder and pick `Pack with IntunewinUtil`.
-<br><br>
-![Pack](packintuneutil.gif)
-<br><br><br><br><br><br><br>
-To test your package just right-click on `.intunewin` file and choose
-`Run test in Sandbox`
-![Test](testsandbox.gif)
+
+> Screenshot removed to keep the repository free of binary assets. Follow the step-by-step instructions above to reproduce the workflow locally.
+
+To test your package just right-click on `.intunewin` file and choose `Run test in Sandbox`.
 
 # New feature - Run test with detection
 With version 1.3.0 I've introduced new feature that allows to test your installation and test your custom detection script.

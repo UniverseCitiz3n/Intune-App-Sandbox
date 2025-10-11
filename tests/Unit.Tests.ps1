@@ -1,10 +1,11 @@
 Describe "CHECK CONFIGURATION FILES ARE PRESENT" {
 	$configurationRoot = Join-Path -Path $PSScriptRoot -ChildPath '..\Intune-App-Sandbox\Configuration'
-	$expectedItems = @(
-		'Install-Winget.ps1',
-		'intunewin-Box-icon.ico',
-		'IntuneWinAppUtil.exe',
-		'IntuneWinAppUtilDecoder.exe',
+        $expectedItems = @(
+                'Install-Winget.ps1',
+                'IntuneSandboxCmd.dll',
+                'intunewin-Box-icon.ico',
+                'IntuneWinAppUtil.exe',
+                'IntuneWinAppUtilDecoder.exe',
 		'Invoke-IntunewinUtil.ps1',
 		'Invoke-Test.ps1',
 		'Invoke-Winget.ps1',

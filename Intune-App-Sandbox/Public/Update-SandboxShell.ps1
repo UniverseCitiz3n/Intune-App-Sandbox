@@ -19,8 +19,59 @@ To correctly create intunewin package, please name parent folder as the same as 
 		Break
 	}
 	Clear-Host
-	Write-Host 'Thanks for using this tool!' -ForegroundColor Green
-	Write-Host 'Starting update process...' -ForegroundColor Yellow
+
+	# Display ASCII Art Banner
+	Write-Host @"
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║    ██╗███╗   ██╗████████╗██╗   ██╗███╗   ██╗███████╗                       ║
+║    ██║████╗  ██║╚══██╔══╝██║   ██║████╗  ██║██╔════╝                       ║
+║    ██║██╔██╗ ██║   ██║   ██║   ██║██╔██╗ ██║█████╗                         ║
+║    ██║██║╚██╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝                         ║
+║    ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚████║███████╗                       ║
+║    ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝                       ║
+║                                                                              ║
+║         ███████╗ █████╗ ███╗   ██╗██████╗ ██████╗  ██████╗ ██╗  ██╗        ║
+║         ██╔════╝██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝        ║
+║         ███████╗███████║██╔██╗ ██║██║  ██║██████╔╝██║   ██║ ╚███╔╝         ║
+║         ╚════██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗██║   ██║ ██╔██╗         ║
+║         ███████║██║  ██║██║ ╚████║██████╔╝██████╔╝╚██████╔╝██╔╝ ██╗        ║
+║         ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝        ║
+║                                                                              ║
+║                    🔄 Win32 App Testing Framework 🔄                         ║
+║                                                                              ║
+║                      Test Intune packages locally                            ║
+║                      before production deployment!                           ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"@ -ForegroundColor Cyan
+
+	Write-Host "`n" -NoNewline
+	Write-Host "  © 2021-2026 Maciej Horbacz" -ForegroundColor DarkGray
+	Write-Host "`n" -NoNewline
+
+	# Pre-start menu
+	Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+	Write-Host "║                     UPDATE WIZARD                         ║" -ForegroundColor Yellow
+	Write-Host "╠═══════════════════════════════════════════════════════════╣" -ForegroundColor Yellow
+	Write-Host "║                                                           ║" -ForegroundColor Yellow
+	Write-Host "║  This wizard will update your Intune App Sandbox         ║" -ForegroundColor White
+	Write-Host "║  installation with the latest scripts and tools.         ║" -ForegroundColor White
+	Write-Host "║                                                           ║" -ForegroundColor Yellow
+	Write-Host "║  What will be updated:                                   ║" -ForegroundColor Yellow
+	Write-Host "║    ✓ IntuneWinAppUtil.exe (latest from GitHub)           ║" -ForegroundColor Green
+	Write-Host "║    ✓ Configuration scripts                               ║" -ForegroundColor Green
+	Write-Host "║    ✓ Helper files and templates                          ║" -ForegroundColor Green
+	Write-Host "║    ✓ Icons and resources                                 ║" -ForegroundColor Green
+	Write-Host "║                                                           ║" -ForegroundColor Yellow
+	Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+	Write-Host "`n"
+
+	Write-Host "Press any key to continue or Ctrl+C to cancel..." -ForegroundColor Cyan -NoNewline
+	$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+	Write-Host "`n`n"
+
+	Write-Host '🚀 Starting update process...' -ForegroundColor Yellow
 	Write-Host 'Checking for operating folder...' -ForegroundColor Yellow -NoNewline
 	$SandboxOperatingFolder = 'C:\SandboxEnvironment\bin'
 	[string] $module = (Get-Command -Name $MyInvocation.MyCommand -All).Source

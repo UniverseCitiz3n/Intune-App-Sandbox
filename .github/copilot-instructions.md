@@ -8,8 +8,7 @@ PowerShell module for testing Intune Win32 app deployment packages locally using
 ### Module Structure
 - **Module Root**: [Intune-App-Sandbox/](Intune-App-Sandbox/) - Standard PowerShell module with `.psd1` manifest and `.psm1` loader
 - **Public Functions**: [Intune-App-Sandbox/Public/](Intune-App-Sandbox/Public/) - Exported cmdlets (`Add-SandboxShell`, `Update-SandboxShell`)
-- **Configuration Scripts**: [Intune-App-Sandbox/Configuration/](Intune-App-Sandbox/Configuration/) - Core logic for packing/testing (not exposed as cmdlets)
-- **Helper Scripts**: [Intune-App-Sandbox/Helpers/](Intune-App-Sandbox/Helpers/) - Templates and utilities copied to `C:\SandboxEnvironment`
+- **Configuration Scripts**: [Intune-App-Sandbox/Configuration/](Intune-App-Sandbox/Configuration/) - Core logic, templates, icons, and utilities copied to `C:\SandboxEnvironment\bin`
 
 ### Module Loading Pattern
 The [Intune-App-Sandbox.psm1](Intune-App-Sandbox/Intune-App-Sandbox.psm1) uses dot-sourcing to load all `.ps1` files from Public folder and auto-exports them:

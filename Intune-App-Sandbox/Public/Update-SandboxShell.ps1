@@ -22,28 +22,26 @@ To correctly create intunewin package, please name parent folder as the same as 
 
 	# Display ASCII Art Banner
 	Write-Host @"
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║    ██╗███╗   ██╗████████╗██╗   ██╗███╗   ██╗███████╗                       ║
-║    ██║████╗  ██║╚══██╔══╝██║   ██║████╗  ██║██╔════╝                       ║
-║    ██║██╔██╗ ██║   ██║   ██║   ██║██╔██╗ ██║█████╗                         ║
-║    ██║██║╚██╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝                         ║
-║    ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚████║███████╗                       ║
-║    ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝                       ║
-║                                                                              ║
-║         ███████╗ █████╗ ███╗   ██╗██████╗ ██████╗  ██████╗ ██╗  ██╗        ║
-║         ██╔════╝██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝        ║
-║         ███████╗███████║██╔██╗ ██║██║  ██║██████╔╝██║   ██║ ╚███╔╝         ║
-║         ╚════██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗██║   ██║ ██╔██╗         ║
-║         ███████║██║  ██║██║ ╚████║██████╔╝██████╔╝╚██████╔╝██╔╝ ██╗        ║
-║         ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝        ║
-║                                                                              ║
-║                    🔄 Win32 App Testing Framework 🔄                         ║
-║                                                                              ║
-║                      Test Intune packages locally                            ║
-║                      before production deployment!                           ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+
+    ██╗███╗   ██╗████████╗██╗   ██╗███╗   ██╗███████╗
+    ██║████╗  ██║╚══██╔══╝██║   ██║████╗  ██║██╔════╝
+    ██║██╔██╗ ██║   ██║   ██║   ██║██╔██╗ ██║█████╗
+    ██║██║╚██╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝
+    ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚████║███████╗
+    ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+
+    ███████╗ █████╗ ███╗   ██╗██████╗ ██████╗  ██████╗ ██╗  ██╗
+    ██╔════╝██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝
+    ███████╗███████║██╔██╗ ██║██║  ██║██████╔╝██║   ██║ ╚███╔╝
+    ╚════██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗██║   ██║ ██╔██╗
+    ███████║██║  ██║██║ ╚████║██████╔╝██████╔╝╚██████╔╝██╔╝ ██╗
+    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝
+
+                🔄 Win32 App Testing Framework 🔄
+
+                  Test Intune packages locally
+                  before production deployment!
+
 "@ -ForegroundColor Cyan
 
 	Write-Host "`n" -NoNewline
@@ -51,22 +49,16 @@ To correctly create intunewin package, please name parent folder as the same as 
 	Write-Host "`n" -NoNewline
 
 	# Pre-start menu
-	Write-Host "╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-	Write-Host "║                     UPDATE WIZARD                         ║" -ForegroundColor Yellow
-	Write-Host "╠═══════════════════════════════════════════════════════════╣" -ForegroundColor Yellow
-	Write-Host "║                                                           ║" -ForegroundColor Yellow
-	Write-Host "║  This wizard will update your Intune App Sandbox         ║" -ForegroundColor White
-	Write-Host "║  installation with the latest scripts and tools.         ║" -ForegroundColor White
-	Write-Host "║                                                           ║" -ForegroundColor Yellow
-	Write-Host "║  What will be updated:                                   ║" -ForegroundColor Yellow
-	Write-Host "║    ✓ IntuneWinAppUtil.exe (latest from GitHub)           ║" -ForegroundColor Green
-	Write-Host "║    ✓ Configuration scripts                               ║" -ForegroundColor Green
-	Write-Host "║    ✓ Helper files and templates                          ║" -ForegroundColor Green
-	Write-Host "║    ✓ Icons and resources                                 ║" -ForegroundColor Green
-	Write-Host "║                                                           ║" -ForegroundColor Yellow
-	Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
-	Write-Host "`n"
-
+	Write-Host "`n" -NoNewline
+	Write-Host "                     UPDATE WIZARD" -ForegroundColor Yellow
+	Write-Host "                     =============`n" -ForegroundColor Yellow
+	Write-Host "  This wizard will update your Intune App Sandbox" -ForegroundColor White
+	Write-Host "  installation with the latest scripts and tools.`n" -ForegroundColor White
+	Write-Host "  What will be updated:" -ForegroundColor White
+	Write-Host "    ✓ IntuneWinAppUtil.exe (latest from GitHub)" -ForegroundColor Green
+	Write-Host "    ✓ Configuration scripts" -ForegroundColor Green
+	Write-Host "    ✓ Helper files and templates" -ForegroundColor Green
+	Write-Host "    ✓ Icons and resources`n" -ForegroundColor Green
 	Write-Host "Press any key to continue or Ctrl+C to cancel..." -ForegroundColor Cyan -NoNewline
 	$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 	Write-Host "`n`n"
@@ -81,8 +73,6 @@ To correctly create intunewin package, please name parent folder as the same as 
 		Write-Host "Copying crucial files to $SandboxOperatingFolder" -ForegroundColor Yellow
 		# Copy all files except IntuneWinAppUtil.exe (will be downloaded)
 		Get-ChildItem -Path $PathModule\Configuration\* -Exclude 'IntuneWinAppUtil.exe' | Copy-Item -Destination $SandboxOperatingFolder -Recurse -Force
-		Write-Host 'Copying helpers files to C:\SandboxEnvironment' -ForegroundColor Yellow
-		Copy-Item -Path $PathModule\Helpers\* -Recurse -Destination 'C:\SandboxEnvironment' -Force
 
 		# Download latest IntuneWinAppUtil.exe from GitHub
 		Write-Host 'Downloading latest IntuneWinAppUtil.exe from GitHub...' -ForegroundColor Yellow

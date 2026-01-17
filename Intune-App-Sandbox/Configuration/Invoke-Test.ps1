@@ -99,6 +99,3 @@ New-WSBConfig -OutputPath $WSBPath `
 
 Start-Process $WSBPath
 #endregion
-
-Start-Process $WSBPath
-#endregion

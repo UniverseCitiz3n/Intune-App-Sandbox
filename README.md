@@ -1,151 +1,205 @@
 # Intune-App-Sandbox
 
-This tool is for testing Powershell Script which is packed using [Win32 Content Prep Tool](https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool) for installing software using Win32 Deployment profile in Intune.
+[![PowerShell Gallery Version](https://img.shields.io/powershellgallery/v/Intune-App-Sandbox)](https://www.powershellgallery.com/packages/Intune-App-Sandbox)
+[![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/Intune-App-Sandbox)](https://www.powershellgallery.com/packages/Intune-App-Sandbox)
+[![License](https://img.shields.io/github/license/UniverseCitiz3n/Intune-App-Sandbox)](LICENSE)
 
-# Installing
+> 🧪 Test your Intune Win32 app deployment packages locally using Windows Sandbox before deploying to production.
 
-Project is published to `PSGallery`.
+A PowerShell module that enables you to pack and test [Win32 Content Prep Tool](https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool) packages (`.intunewin`) in an isolated Windows Sandbox environment—no need to deploy to actual devices during development.
+
+## ✨ Features
+
+- **One-click packaging** — Right-click any folder to create `.intunewin` packages
+- **Isolated testing** — Run packages in Windows Sandbox without affecting your system
+- **SYSTEM context execution** — Scripts run as SYSTEM user, mimicking real Intune deployments
+- **PSADT support** — Automatic detection of PowerShell App Deployment Toolkit (v3 & v4) packages
+- **Exit code capture** — Retrieve `$LASTEXITCODE` from script execution for validation
+- **Toast notifications** — Visual progress feedback inside the Sandbox
+
+## 📋 Prerequisites
+
+- Windows 10/11 Pro, Enterprise, or Education
+- PowerShell 5.1 or later
+- Administrator privileges
+- Windows Sandbox feature (will be enabled automatically if not already)
+
+## 🚀 Installation
+
+### Install from PowerShell Gallery
+
 ```powershell
 Install-Module -Name Intune-App-Sandbox
 ```
-To configure tool on your device run `Add-SandboxShell`.
 
-It will create folder - `C:\SandboxEnvironment` where all neccessary items will be stored.
-You will be also prompt to choose which context menu items you wish to apply.
-1. Run test in Sandbox
-1. Pack with IntunewinUtil
-1. Both
+### Initial Setup
 
-# Updating
+Run the setup wizard to configure context menu integration:
+
+```powershell
+Add-SandboxShell
+```
+
+This will:
+1. Enable the Windows Sandbox feature (if needed)
+2. Create the operating folder at `C:\SandboxEnvironment`
+3. Download the latest `IntuneWinAppUtil.exe` from Microsoft
+4. Add right-click context menu options
+
+You can choose which context menu items to install:
+| Option | Description |
+|--------|-------------|
+| **Run test in Sandbox** | Test `.intunewin` files in Windows Sandbox |
+| **Pack with IntunewinUtil** | Package folders into `.intunewin` format |
+| **Both** | Install both options (recommended) |
+
+## 🔄 Updating
 
 ```powershell
 Update-Module -Name Intune-App-Sandbox
+Update-SandboxShell
 ```
-Run `Update-SandboxShell`
 
-# How to use
-Packing script and all neccessary executables is as simple as creating parent folder which is named exacly the same as `.ps1` script inside.<br>
-Then right-click on folder and pick `Pack with IntunewinUtil`.
-<br><br>
+## 📖 Usage
+
+### Packaging a Script
+
+1. Create a folder with the **same name** as your install script:
+   ```
+   📁 Install-VSCode/
+       📄 Install-VSCode.ps1
+       📄 VSCodeSetup.exe
+       📄 config.json
+   ```
+
+2. Right-click the folder → **Pack with IntunewinUtil**
+
+3. The `.intunewin` file is created in the same folder
+
 ![Pack](packintuneutil.gif)
-<br><br><br><br><br><br><br>
-To test your package just right-click on `.intunewin` file and choose
-`Run test in Sandbox`
+
+### Testing a Package
+
+1. Right-click the `.intunewin` file → **Run test in Sandbox**
+
+2. Windows Sandbox launches and executes your script as SYSTEM
+
+3. Review the results in the Sandbox environment
+
 ![Test](testsandbox.gif)
 
-# Technical details
-## Template script
-At `SandboxEnvironment` location you will find my template installation script.
-It's creation helped me to reduce time spent on every installation package.
-Now most of the times it comes down to changing Parameters region.
+### PSADT Package Support
 
-```powershell
-# Parameters
-$FileName = "VSCodeSetup-x64-1.50.0.exe"
-$Tag = 'VSCode'
-$OperatingFolder = 'C:\Program Files (x86)\Microsoft\Temp'
-$ArgumentListInstallation = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /SP- /LOG="{0}\{1}Install.log" /MERGETASKS=!runcode' -f $OperatingFolder, $Tag
-$InstallFailCode = 1707
-$InstallSuccessCode = 1641
+The module automatically detects PowerShell App Deployment Toolkit packages:
 
-# Log
-$LogFile = "$OperatingFolder\IntuneSoftwareInstall.log"
-$LogFileError = "$OperatingFolder\IntuneSoftwareInstallError.log"
+| Package Type | Detection | Setup File |
+|--------------|-----------|------------|
+| **PSADT v3** | Folder name contains `PSADT` | `Deploy-Application.exe` |
+| **PSADT v4** | Folder name contains `PSADTv4` | `Invoke-AppDeployToolkit.exe` |
+| **Standard** | Any other folder | `<FolderName>.ps1` |
 
-#Info
-. $PSScriptRoot\Write-FileLog.ps1
+## ⚙️ How It Works
 
-#Custom exit
-function Exit-WithCode {
-	param
-	(
-		$exitcode
-	)
+### Architecture Overview
 
-	$host.SetShouldExit($exitcode)
-}
-#######################################################################
-#Check for folder
-If (Test-Path -Path $OperatingFolder -PathType Container) {
-	Write-FileLog -FunctionStart -LogFile $LogFile
-} Else {
-	New-Item -Path $OperatingFolder -ItemType Directory
-	Write-FileLog -Message "$OperatingFolder created" -LogFile $LogFile
-}
-
-#Install
-Write-FileLog -FunctionStart -LogFile $LogFile
-Write-FileLog -Message "Installation with arguments: $ArgumentListInstallation" -LogFile $LogFile
-Try {
-	$Process = Start-Process $PSScriptRoot\$FileName -ArgumentList $ArgumentListInstallation -NoNewWindow -PassThru -Wait -ErrorAction Stop
-	Write-FileLog -Message "Installation exit code: $($Process.ExitCode)" -LogFile $LogFile
-
-	If ($Process.ExitCode -ne 0) {
-		Write-FileLog -Type Error -Message "Installation failed. Please check $OperatingFolder\${Tag}Install.log" -LogFileError $LogFileError
-		Exit-WithCode -exitcode $InstallFailCode
-	} else {
-		Write-FileLog -Message "Installation $FileName SUCCESS" -LogFile $LogFile
-		Exit-WithCode -exitcode $InstallSuccessCode
-	}
-} Catch {
-	Write-FileLog -Type Error -Message "Script ERROR" -LogFileError $LogFileError
-	$_ | Out-File -FilePath $LogFileError -Append -Encoding ASCII
-	Write-FileLog -Type Warn -Message "Script TERMINATION" -LogFileError $LogFileError
-	Write-FileLog -Type Warn -Message "Exitcode $InstallFailCode" -LogFileError $LogFileError
-	Exit-WithCode -exitcode $InstallFailCode
-}
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        HOST MACHINE                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Right-click .intunewin                                         │
+│         │                                                       │
+│         ▼                                                       │
+│  ┌─────────────────┐    ┌──────────────────────────────────┐   │
+│  │ Invoke-Test.ps1 │───▶│ Generate .wsb configuration file │   │
+│  └─────────────────┘    └──────────────────────────────────┘   │
+│                                    │                            │
+│         ┌──────────────────────────┘                            │
+│         ▼                                                       │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │                    WINDOWS SANDBOX                          ││
+│  │  ┌───────────────────────────────────────────────────────┐  ││
+│  │  │ 1. Decode .intunewin using IntuneWinAppUtilDecoder    │  ││
+│  │  │ 2. Extract package contents to C:\Temp                │  ││
+│  │  │ 3. Create scheduled task running as SYSTEM            │  ││
+│  │  │ 4. Execute install script                             │  ││
+│  │  │ 5. Capture $LASTEXITCODE to file                      │  ││
+│  │  └───────────────────────────────────────────────────────┘  ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Host part
-Windows Sandbox file is created at location `C:\SandboxEnvironment`.
-This file contains configuration details about Sandbox.
+### Sandbox Configuration
 
-Eg.
+A `.wsb` file is dynamically generated with:
+
 ```xml
 <Configuration>
-<VGpu>Enable</VGpu>
-<Networking>Enable</Networking>
-<MappedFolders>
-<MappedFolder>
-<HostFolder>C:\Intune\Client apps - Apps\Restart-Device</HostFolder>
-<ReadOnly>true</ReadOnly>
-</MappedFolder>
-<MappedFolder>
-<HostFolder>C:\SandboxEnvironment\bin</HostFolder>
-<ReadOnly>true</ReadOnly>
-</MappedFolder>
-</MappedFolders>
-<LogonCommand>
-<Command>powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command C:\Users\WDAGUtilityAccount\Desktop\bin\Restart-Device_LogonCommand.ps1</Command>
-</LogonCommand>
+  <VGpu>Enable</VGpu>
+  <Networking>Enable</Networking>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\Path\To\Your\Package</HostFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\SandboxEnvironment\bin</HostFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command ...</Command>
+  </LogonCommand>
 </Configuration>
 ```
 
-Core eleement is Logon Command.
-This script is run after Sandbox environment starts.
+### SYSTEM Context Execution
 
-## Sandbox part
-Eg. you have Restart-Device.intune, then logon command will be as below
+The module uses a scheduled task to run scripts as the SYSTEM user—the same context Intune uses for Win32 app deployments:
+
 ```powershell
-If (!(Test-Path -Path C:\Temp -PathType Container))
-{
-	New-Item -Path C:\Temp -ItemType Directory
-}
-Copy-Item -Path "C:\Users\WDAGUtilityAccount\Desktop\Restart-Device\Restart-Device.intunewin" -Destination C:\Temp
-$Decoder = Start-Process -FilePath C:\Users\WDAGUtilityAccount\Desktop\bin\IntuneWinAppUtilDecoder.exe -ArgumentList "C:\Temp\Restart-Device.intunewin /s" -NoNewWindow -PassThru -Wait
-
-Rename-Item -Path "C:\Temp\Restart-Device.intunewin.decoded" -NewName 'Restart-Device.zip' -Force;
-Expand-Archive -Path "C:\Temp\Restart-Device.zip" -Destination C:\Temp -Force;
-Remove-Item -Path "C:\Temp\Restart-Device.zip" -Force;
-
-# register script as scheduled task
-$Trigger = New-ScheduledTaskTrigger -Once -At $(Get-Date).AddMinutes(1)
-$User = "SYSTEM"
-$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ex bypass "powershell {& C:\Temp\Restart-Device.ps1};New-Item C:\Temp\$Lastexitcode.code -force"'
-$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
-Register-ScheduledTask -TaskName "Install App" -Trigger $Trigger -User $User -Action $Action -Settings $Settings -Force
+# Nested PowerShell captures exit code
+$Action = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument '-ex bypass "powershell {& C:\Temp\Install.ps1};New-Item C:\Temp\$Lastexitcode.code -force"'
 ```
-This package is decoded within Sandbox environment.
-Decoded contents are then expanded and to path `C:\Temp`.
-Then Scheduled Task is created which will start `Powershell` within `Powershell` to run script contents.
-Thanks to nesting `Powershell` runspaces after script ends, `$LASTEXITCODE` is saved in form of file at script location.
+
+This nested approach ensures `$LASTEXITCODE` is captured correctly and saved to a file for verification.
+
+## 📁 File Structure
+
+```
+C:\SandboxEnvironment\
+└── bin\
+    ├── IntuneWinAppUtil.exe        # Microsoft Win32 Content Prep Tool
+    ├── IntuneWinAppUtilDecoder.exe # Package decoder for Sandbox
+    ├── Invoke-IntunewinUtil.ps1    # Packing script
+    ├── Invoke-Test.ps1             # Test orchestration script
+    ├── New-WSBConfig.ps1           # Sandbox config generator
+    ├── New-LogonScriptContent.ps1  # Logon script generator
+    ├── New-ToastNotification.ps1   # Toast notification helper
+    └── toast.xml                   # Toast notification template
+```
+
+## 🐛 Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Context menu not appearing | Run `Add-SandboxShell` as Administrator |
+| Sandbox won't start | Ensure Windows Sandbox feature is enabled |
+| Package fails to decode | Verify the `.intunewin` file is not corrupted |
+| Script not executing | Check that folder name matches script name |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👤 Author
+
+**Maciej Horbacz** ([@UniverseCitiz3n](https://github.com/UniverseCitiz3n))
+
+---
+
+⭐ If this project helps you, consider giving it a star!

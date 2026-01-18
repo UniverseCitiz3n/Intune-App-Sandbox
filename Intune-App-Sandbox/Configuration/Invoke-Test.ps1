@@ -1,127 +1,94 @@
-#params
+<#
+.SYNOPSIS
+    Invoke-Test v2.0 - Tests Intune Win32 app packages in Windows Sandbox.
+.DESCRIPTION
+    Decodes and runs .intunewin packages in an isolated Windows Sandbox environment.
+    Supports standard PowerShell installers and PSADT v3/v4 packages.
+.PARAMETER PackagePath
+    Full path to the .intunewin file to test.
+.NOTES
+    Version: 1.4.0
+    Refactored with helper functions for improved maintainability.
+#>
 param(
-    [String] $PackagePath,
-    [Bool] $DetectionScript = $false
+    [Parameter(Mandatory)]
+    [String]$PackagePath
 )
 
-$PackageFolderName = Split-Path (Split-Path "$PackagePath" -Parent) -Leaf
-$FileName = (Get-Item $PackagePath).Name
+#region Import Helpers
+. (Join-Path $PSScriptRoot 'New-WSBConfig.ps1')
+. (Join-Path $PSScriptRoot 'New-LogonScriptContent.ps1')
+. (Join-Path $PSScriptRoot 'New-PreLogonScriptContent.ps1')
+#endregion
+
+#region Configuration
 $SandboxOperatingFolder = 'C:\SandboxEnvironment'
-$SandboxFile = "$PackageFolderName.wsb"
-$DetectionScriptFile = "$((Get-Item $PackagePath).Name.Replace('.intunewin',''))_Detection.ps1"
-$FileNameZIP = $($FileName -replace '.intunewin', '.zip')
-if ($FileName -like 'Deploy-Application*'){
-
-    $FileNameRun = 'Deploy-Application.exe'
-} else {
-    $FileNameRun = $($FileName -replace '.intunewin', '.ps1')
-}
-
 $SandboxDesktopPath = 'C:\Users\WDAGUtilityAccount\Desktop'
 $SandboxTempFolder = 'C:\Temp'
-$SandboxSharedPath = "$SandboxDesktopPath\$PackageFolderName"
-$FullStartupPath = "$SandboxSharedPath\$FileName"
-$FullStartupPath = """$FullStartupPath"""
-$ToastNotificationPath = "$SandboxDesktopPath\bin"
 $ToastTitle = 'Intune App Sandbox'
 #endregion
 
-If (!(Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
-    New-Item -Path $SandboxOperatingFolder -ItemType Directory
+#region Package Metadata
+$PackageItem = Get-Item $PackagePath
+$PackageFolderName = Split-Path (Split-Path $PackagePath -Parent) -Leaf
+$FileName = $PackageItem.Name
+$FileNameZIP = $FileName -replace '\.intunewin$', '.zip'
+$PackageDirectory = $PackageItem.Directory.FullName
+
+# Detect PSADT v3/v4 or standard installer
+$FileNameRun = switch -Wildcard ($FileName) {
+    'Deploy-Application*'      { 'Deploy-Application.exe' }
+    'Invoke-AppDeployToolkit*' { 'Invoke-AppDeployToolkit.ps1' }
+    default                    { $FileName -replace '\.intunewin$', '.ps1' }
 }
-Function New-WSB {
-    Param
-    (
-        [String]$CommandtoRun
-    )
+#endregion
 
-    New-Item -Path $SandboxOperatingFolder -Name $SandboxFile -type file -Force | Out-Null
-    $Config = @"
-<Configuration>
-<VGpu>Enable</VGpu>
-<Networking>Enable</Networking>
-<MappedFolders>
-<MappedFolder>
-<HostFolder>$((Get-Item $PackagePath).Directory)</HostFolder>
-<ReadOnly>false</ReadOnly>
-</MappedFolder>
-<MappedFolder>
-<HostFolder>C:\SandboxEnvironment\bin</HostFolder>
-<ReadOnly>true</ReadOnly>
-</MappedFolder>
-</MappedFolders>
-<LogonCommand>
-<Command>$CommandtoRun</Command>
-</LogonCommand>
-</Configuration>
-"@
-    Set-Content -Path "$SandboxOperatingFolder\$SandboxFile" -Value $Config
+#region Folder Setup
+$BinFolder = Join-Path $SandboxOperatingFolder 'bin'
+
+if (-not (Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
+    New-Item -Path $SandboxOperatingFolder -ItemType Directory -Force | Out-Null
+}
+#endregion
+
+#region Computed Paths
+$SandboxSharedPath = "$SandboxDesktopPath\$PackageFolderName"
+$FullStartupPath = """$SandboxSharedPath\$FileName"""
+$ToastNotificationPath = "$SandboxDesktopPath\bin"
+#endregion
+
+#region Generate Logon Scripts
+$LogonScriptParams = @{
+    ToastNotificationPath = $ToastNotificationPath
+    ToastTitle            = $ToastTitle
+    SandboxTempFolder     = $SandboxTempFolder
+    FullStartupPath       = $FullStartupPath
+    SandboxDesktopPath    = $SandboxDesktopPath
+    FileName              = $FileName
+    FileNameZIP           = $FileNameZIP
+    FileNameRun           = $FileNameRun
+    PackageFolderName     = $PackageFolderName
 }
 
+$LogonScriptContent = New-LogonScriptContent -Params $LogonScriptParams
+$PreLogonScriptContent = New-PreLogonScriptContent -SandboxDesktopPath $SandboxDesktopPath -PackageFolderName $PackageFolderName
 
-$ScriptBlock = @"
-New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Pre-configurations and file decoding initiated'
-If (!(Test-Path -Path $SandboxTempFolder -PathType Container))
-{
-	New-Item -Path $SandboxTempFolder -ItemType Directory
-}
-Copy-Item -Path $FullStartupPath -Destination $SandboxTempFolder
-`$Decoder = Start-Process -FilePath $SandboxDesktopPath\bin\IntuneWinAppUtilDecoder.exe -ArgumentList "$SandboxTempFolder\$FileName /s" -NoNewWindow -PassThru -Wait
+# Write logon scripts to bin folder (mapped to sandbox desktop\bin)
+$LogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_LogonCommand.ps1"
+$PreLogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_PreLogonCommand.ps1"
 
-Rename-Item -Path "$SandboxTempFolder\$FileName.decoded" -NewName `'$FileNameZIP`' -Force;
-Expand-Archive -Path "$SandboxTempFolder\$FileNameZIP" -Destination $SandboxTempFolder -Force;
-Remove-Item -Path "$SandboxTempFolder\$FileNameZIP" -Force;
-New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Decoding finished!'
-# register detection script as scheduled task
-if(`$$DetectionScript)
-{
-    # register script as scheduled task
-    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
-    & $SandboxTempFolder\$FileNameRun};`
-    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
-    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""";`
-    Start-ScheduledTask -TaskName {Detect App}"'
-    `$User = "SYSTEM"
-    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
-    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
-    Register-ScheduledTask -TaskName "Install App" -User `$User -Action `$Action -Settings `$Settings -Force
-    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Detecting software};`
-    & $SandboxTempFolder\$DetectionScriptFile};`
-    New-Item $SandboxTempFolder\`$LastExitcode.detectioncode -force;`
-    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Detection completed with code: `$LASTEXITCODE"""`
-    if(`$LASTEXITCODE -eq 1){Start-ScheduledTask -TaskName {Install app}}"'
-    `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
-    `$User = "SYSTEM"
-    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
-    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
-    Register-ScheduledTask -TaskName "Detect App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
+New-Item -Path $LogonScriptPath -ItemType File -Value $LogonScriptContent -Force | Out-Null
+New-Item -Path $PreLogonScriptPath -ItemType File -Value $PreLogonScriptContent -Force | Out-Null
+#endregion
 
-}else{
-    `$TaskActionArgument = '-ex bypass "powershell {New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body {Installing software};`
-    & $SandboxTempFolder\$FileNameRun};`
-    New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
-    New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
-    `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)
-    `$User = "SYSTEM"
-    `$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `$TaskActionArgument
-    `$Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit "01:00" -AllowStartIfOnBatteries
-    Register-ScheduledTask -TaskName "Install App" -Trigger `$Trigger -User `$User -Action `$Action -Settings `$Settings -Force
-}
-"@
+#region Create and Launch Sandbox
+$StartupCommand = "powershell.exe -WindowStyle Hidden -executionpolicy bypass -command $SandboxDesktopPath\bin\${PackageFolderName}_PreLogonCommand.ps1"
+$WSBPath = Join-Path $SandboxOperatingFolder "$PackageFolderName.wsb"
 
-New-Item -Path $SandboxOperatingFolder\bin -Name "$PackageFolderName`_LogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
+New-WSBConfig -OutputPath $WSBPath `
+              -HostFolder $PackageDirectory `
+              -BinFolder $BinFolder `
+              -LogonCommand $StartupCommand
 
-$Scriptblock = @"
-Set-ExecutionPolicy Bypass -Force;
-new-item $PSHOME\Profile.ps1;
-Set-Content -Path $PSHOME\Profile.ps1 -Value '. C:\Users\WDAGUtilityAccount\Desktop\bin\New-ToastNotification.ps1';
-powershell -file '$SandboxDesktopPath\bin\$PackageFolderName`_LogonCommand.ps1'
-"@
-
-New-Item -Path $SandboxOperatingFolder\bin -Name "$PackageFolderName`_PreLogonCommand.ps1" -ItemType File -Value $ScriptBlock -Force | Out-Null
-
-$Startup_Command = "powershell.exe -WindowStyle Hidden -executionpolicy bypass -command $SandboxDesktopPath\bin\$PackageFolderName`_PreLogonCommand.ps1"
-
-New-WSB -CommandtoRun $Startup_Command
-
-Start-Process $SandboxOperatingFolder\$SandboxFile
+Start-Process $WSBPath
+#endregion

@@ -43,7 +43,7 @@ New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTi
 New-Item $SandboxTempFolder\`$Lastexitcode.code -force;`
 Copy-Item -Path $SandboxTempFolder\`$Lastexitcode.code -Destination $SandboxDesktopPath\$PackageFolderName\ -Force;`
 if(`$LASTEXITCODE -eq 0){`
-    Get-ItemProperty -Path {HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*},{HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*},{HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*},{HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*} -ErrorAction Ignore | Where-Object DisplayName | Select-Object -Property DisplayName, DisplayVersion, UninstallString, InstallDate | Sort-Object -Property DisplayName | Export-Csv -Path $SandboxDesktopPath\$PackageFolderName\detection.csv -NoTypeInformation -Force`
+    Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*,HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*,HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*,HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* -ErrorAction Ignore | Where-Object DisplayName | Select-Object -Property DisplayName, DisplayVersion, UninstallString, InstallDate | Sort-Object -Property DisplayName | Export-Csv -Path $SandboxDesktopPath\$PackageFolderName\detection.csv -NoTypeInformation -Force`
 };`
 New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title {$ToastTitle} -Body """Installation completed with code: `$LASTEXITCODE""""'
 `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)

@@ -45,7 +45,7 @@ To correctly create intunewin package, please name parent folder as the same as 
 "@ -ForegroundColor Cyan
 
 	Write-Host "`n" -NoNewline
-	Write-Host "  © 2021-2026 Maciej Horbacz" -ForegroundColor DarkGray
+	Write-Host "  © 2026 Maciej Horbacz" -ForegroundColor DarkGray
 	Write-Host "`n" -NoNewline
 
 	# Pre-start menu

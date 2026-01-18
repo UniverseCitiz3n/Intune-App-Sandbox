@@ -7,7 +7,7 @@
 .PARAMETER PackagePath
     Full path to the .intunewin file to test.
 .NOTES
-    Version: 2.0
+    Version: 1.4.0
     Refactored with helper functions for improved maintainability.
 #>
 param(

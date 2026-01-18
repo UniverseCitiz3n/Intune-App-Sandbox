@@ -10,8 +10,6 @@ function New-WSBConfig {
         The host folder containing the package to map into sandbox.
     .PARAMETER BinFolder
         The bin folder path on host to map (read-only).
-    .PARAMETER TestFolder
-        The test folder path on host for this app's test artifacts.
     .PARAMETER LogonCommand
         The command to execute on sandbox logon.
     #>
@@ -27,11 +25,13 @@ function New-WSBConfig {
         [string]$BinFolder,
 
         [Parameter(Mandatory)]
-        [string]$TestFolder,
-
-        [Parameter(Mandatory)]
         [string]$LogonCommand
     )
+
+    # XML-encode values to handle special characters in paths/commands
+    $XmlHostFolder = [System.Security.SecurityElement]::Escape($HostFolder)
+    $XmlBinFolder = [System.Security.SecurityElement]::Escape($BinFolder)
+    $XmlLogonCommand = [System.Security.SecurityElement]::Escape($LogonCommand)
 
     $Config = @"
 <Configuration>
@@ -39,20 +39,16 @@ function New-WSBConfig {
 <Networking>Enable</Networking>
 <MappedFolders>
 <MappedFolder>
-<HostFolder>$HostFolder</HostFolder>
+<HostFolder>$XmlHostFolder</HostFolder>
 <ReadOnly>false</ReadOnly>
 </MappedFolder>
 <MappedFolder>
-<HostFolder>$BinFolder</HostFolder>
+<HostFolder>$XmlBinFolder</HostFolder>
 <ReadOnly>true</ReadOnly>
-</MappedFolder>
-<MappedFolder>
-<HostFolder>$TestFolder</HostFolder>
-<ReadOnly>false</ReadOnly>
 </MappedFolder>
 </MappedFolders>
 <LogonCommand>
-<Command>$LogonCommand</Command>
+<Command>$XmlLogonCommand</Command>
 </LogonCommand>
 </Configuration>
 "@

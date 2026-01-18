@@ -4,7 +4,6 @@
 .DESCRIPTION
     Decodes and runs .intunewin packages in an isolated Windows Sandbox environment.
     Supports standard PowerShell installers and PSADT v3/v4 packages.
-    Creates test artifacts in C:\SandboxEnvironment\Tests\{AppName}\.
 .PARAMETER PackagePath
     Full path to the .intunewin file to test.
 .NOTES
@@ -44,14 +43,11 @@ $FileNameRun = switch -Wildcard ($FileName) {
 }
 #endregion
 
-#region Test Folder Structure
-# Create Tests\{AppName} folder for this app's test artifacts
-$TestsFolder = Join-Path $SandboxOperatingFolder 'Tests'
-$AppTestFolder = Join-Path $TestsFolder $PackageFolderName
+#region Folder Setup
 $BinFolder = Join-Path $SandboxOperatingFolder 'bin'
 
-if (-not (Test-Path -Path $AppTestFolder -PathType Container)) {
-    New-Item -Path $AppTestFolder -ItemType Directory -Force | Out-Null
+if (-not (Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
+    New-Item -Path $SandboxOperatingFolder -ItemType Directory -Force | Out-Null
 }
 #endregion
 
@@ -59,8 +55,6 @@ if (-not (Test-Path -Path $AppTestFolder -PathType Container)) {
 $SandboxSharedPath = "$SandboxDesktopPath\$PackageFolderName"
 $FullStartupPath = """$SandboxSharedPath\$FileName"""
 $ToastNotificationPath = "$SandboxDesktopPath\bin"
-# Sandbox-side test folder path
-$SandboxTestFolder = "$SandboxDesktopPath\Tests\$PackageFolderName"
 #endregion
 
 #region Generate Logon Scripts
@@ -77,24 +71,23 @@ $LogonScriptParams = @{
 }
 
 $LogonScriptContent = New-LogonScriptContent -Params $LogonScriptParams
-$PreLogonScriptContent = New-PreLogonScriptContent -SandboxDesktopPath $SandboxDesktopPath -PackageFolderName $PackageFolderName -SandboxTestFolder $SandboxTestFolder
+$PreLogonScriptContent = New-PreLogonScriptContent -SandboxDesktopPath $SandboxDesktopPath -PackageFolderName $PackageFolderName
 
-# Write logon scripts to app test folder
-$LogonScriptPath = Join-Path $AppTestFolder 'LogonCommand.ps1'
-$PreLogonScriptPath = Join-Path $AppTestFolder 'PreLogonCommand.ps1'
+# Write logon scripts to bin folder (mapped to sandbox desktop\bin)
+$LogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_LogonCommand.ps1"
+$PreLogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_PreLogonCommand.ps1"
 
 New-Item -Path $LogonScriptPath -ItemType File -Value $LogonScriptContent -Force | Out-Null
 New-Item -Path $PreLogonScriptPath -ItemType File -Value $PreLogonScriptContent -Force | Out-Null
 #endregion
 
 #region Create and Launch Sandbox
-$StartupCommand = "powershell.exe -executionpolicy bypass -command $SandboxTestFolder\PreLogonCommand.ps1"
-$WSBPath = Join-Path $AppTestFolder "$PackageFolderName.wsb"
+$StartupCommand = "powershell.exe -WindowStyle Hidden -executionpolicy bypass -command $SandboxDesktopPath\bin\${PackageFolderName}_PreLogonCommand.ps1"
+$WSBPath = Join-Path $SandboxOperatingFolder "$PackageFolderName.wsb"
 
 New-WSBConfig -OutputPath $WSBPath `
               -HostFolder $PackageDirectory `
               -BinFolder $BinFolder `
-              -TestFolder $AppTestFolder `
               -LogonCommand $StartupCommand
 
 Start-Process $WSBPath

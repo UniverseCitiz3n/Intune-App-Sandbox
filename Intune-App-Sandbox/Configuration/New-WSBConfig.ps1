@@ -10,8 +10,8 @@ function New-WSBConfig {
         The host folder containing the package to map into sandbox.
     .PARAMETER BinFolder
         The bin folder path on host to map (read-only).
-    .PARAMETER LogonCommand
-        The command to execute on sandbox logon.
+    .PARAMETER PreLogonScriptPath
+        The guest path to the script to execute on sandbox logon.
     #>
     [CmdletBinding()]
     param(
@@ -25,12 +25,13 @@ function New-WSBConfig {
         [string]$BinFolder,
 
         [Parameter(Mandatory)]
-        [string]$LogonCommand
+        [string]$PreLogonScriptPath
     )
 
     # XML-encode values to handle special characters in paths/commands
     $XmlHostFolder = [System.Security.SecurityElement]::Escape($HostFolder)
     $XmlBinFolder = [System.Security.SecurityElement]::Escape($BinFolder)
+    $LogonCommand = 'powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $PreLogonScriptPath
     $XmlLogonCommand = [System.Security.SecurityElement]::Escape($LogonCommand)
 
     $Config = @"
@@ -54,10 +55,10 @@ function New-WSBConfig {
 "@
 
     $ParentDir = Split-Path $OutputPath -Parent
-    if (-not (Test-Path $ParentDir)) {
+    if (-not (Test-Path -LiteralPath $ParentDir)) {
         New-Item -Path $ParentDir -ItemType Directory -Force | Out-Null
     }
 
-    Set-Content -Path $OutputPath -Value $Config -Force
+    Set-Content -LiteralPath $OutputPath -Value $Config -Encoding UTF8 -Force
     $OutputPath
 }

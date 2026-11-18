@@ -18,6 +18,8 @@ param(
     [Switch]$RunAsUser
 )
 
+$ErrorActionPreference = 'Stop'
+
 #region Import Helpers
 . (Join-Path $PSScriptRoot 'New-WSBConfig.ps1')
 . (Join-Path $PSScriptRoot 'New-LogonScriptContent.ps1')
@@ -32,8 +34,8 @@ $ToastTitle = 'Intune App Sandbox'
 #endregion
 
 #region Package Metadata
-$PackageItem = Get-Item $PackagePath
-$PackageFolderName = Split-Path (Split-Path $PackagePath -Parent) -Leaf
+$PackageItem = Get-Item -LiteralPath $PackagePath
+$PackageFolderName = $PackageItem.Directory.Name
 $FileName = $PackageItem.Name
 $FileNameZIP = $FileName -replace '\.intunewin$', '.zip'
 $PackageDirectory = $PackageItem.Directory.FullName
@@ -49,14 +51,12 @@ $FileNameRun = switch -Wildcard ($FileName) {
 #region Folder Setup
 $BinFolder = Join-Path $SandboxOperatingFolder 'bin'
 
-if (-not (Test-Path -Path $SandboxOperatingFolder -PathType Container)) {
-    New-Item -Path $SandboxOperatingFolder -ItemType Directory -Force | Out-Null
-}
+New-Item -Path $BinFolder -ItemType Directory -Force | Out-Null
 #endregion
 
 #region Computed Paths
 $SandboxSharedPath = "$SandboxDesktopPath\$PackageFolderName"
-$FullStartupPath = """$SandboxSharedPath\$FileName"""
+$FullStartupPath = "$SandboxSharedPath\$FileName"
 $ToastNotificationPath = "$SandboxDesktopPath\bin"
 #endregion
 
@@ -81,18 +81,18 @@ $PreLogonScriptContent = New-PreLogonScriptContent -SandboxDesktopPath $SandboxD
 $LogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_LogonCommand.ps1"
 $PreLogonScriptPath = Join-Path $BinFolder "${PackageFolderName}_PreLogonCommand.ps1"
 
-New-Item -Path $LogonScriptPath -ItemType File -Value $LogonScriptContent -Force | Out-Null
-New-Item -Path $PreLogonScriptPath -ItemType File -Value $PreLogonScriptContent -Force | Out-Null
+Set-Content -LiteralPath $LogonScriptPath -Value $LogonScriptContent -Encoding UTF8 -Force
+Set-Content -LiteralPath $PreLogonScriptPath -Value $PreLogonScriptContent -Encoding UTF8 -Force
 #endregion
 
 #region Create and Launch Sandbox
-$StartupCommand = "powershell.exe -WindowStyle Hidden -executionpolicy bypass -command $SandboxDesktopPath\bin\${PackageFolderName}_PreLogonCommand.ps1"
+$GuestPreLogonPath = "$SandboxDesktopPath\bin\${PackageFolderName}_PreLogonCommand.ps1"
 $WSBPath = Join-Path $SandboxOperatingFolder "$PackageFolderName.wsb"
 
 New-WSBConfig -OutputPath $WSBPath `
               -HostFolder $PackageDirectory `
               -BinFolder $BinFolder `
-              -LogonCommand $StartupCommand
+              -PreLogonScriptPath $GuestPreLogonPath
 
-Start-Process $WSBPath
+Start-Process -FilePath $WSBPath
 #endregion

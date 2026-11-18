@@ -150,7 +150,7 @@ A `.wsb` file is dynamically generated with:
     </MappedFolder>
   </MappedFolders>
   <LogonCommand>
-    <Command>powershell.exe -WindowStyle Hidden -noprofile -executionpolicy bypass -Command ...</Command>
+    <Command>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Users\WDAGUtilityAccount\Desktop\bin\My Package_PreLogonCommand.ps1"</Command>
   </LogonCommand>
 </Configuration>
 ```
@@ -188,6 +188,7 @@ C:\SandboxEnvironment\
 |-------|----------|
 | Context menu not appearing | Run `Add-SandboxShell` as Administrator |
 | Sandbox won't start | Ensure Windows Sandbox feature is enabled |
+| Sandbox opens but there are no toasts or `Install App` task | Open `Intune-App-Sandbox-startup.log` on the sandbox desktop before closing the session. If the log is missing after updating the scripts, start a new test from the context menu to regenerate the `.wsb` file. |
 | Package fails to decode | Verify the `.intunewin` file is not corrupted |
 | Script not executing | Check that folder name matches script name |
 

@@ -103,7 +103,7 @@ To correctly create intunewin package, please name parent folder as the same as 
     }
     Write-Host "
 Contex menu options:
-1 - Only 'Run test in Sandbox'
+1 - Only Sandbox test context menus (SYSTEM and User)
 2 - Only 'Pack with IntunewinUtil'
 3 - Both
 " -ForegroundColor Yellow

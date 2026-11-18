@@ -58,12 +58,16 @@ if (Get-Command -Name New-ToastNotification -ErrorAction SilentlyContinue) {
 try {
     `$ToolkitExitCode = 1
     & "$SandboxTempFolder\$FileNameRun"
+    `$InstallerSucceeded = `$?
     if (`$LASTEXITCODE -ne `$null) {
         `$ToolkitExitCode = [int]`$LASTEXITCODE
+    } elseif (`$InstallerSucceeded) {
+        `$ToolkitExitCode = 0
     }
 }
 catch {
     `$ToolkitExitCode = 1
+    Write-Error "Installer execution failed: `$_" -ErrorAction Continue
 }
 
 New-Item -Path "$SandboxTempFolder\`$ToolkitExitCode.code" -Force | Out-Null

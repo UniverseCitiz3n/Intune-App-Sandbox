@@ -42,6 +42,7 @@ Describe "GENERATED SANDBOX LOGON SCRIPT" {
 
 		$ScriptContent | Should -Match '\$User = "WDAGUtilityAccount"'
 		$ScriptContent | Should -Match '\$ToolkitExitCode = 1'
+		$ScriptContent | Should -Match 'Installer execution failed'
 		$ScriptContent | Should -Match 'detection\.csv'
 		$ScriptContent | Should -Not -Match 'powershell \{'
 	}

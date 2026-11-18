@@ -56,6 +56,57 @@ Describe "GENERATED SANDBOX LOGON SCRIPT" {
 	}
 }
 
+Describe "WINDOWS SANDBOX STARTUP" {
+	BeforeAll {
+		$ConfigFolder = Join-Path $PSScriptRoot '..\Intune-App-Sandbox\Configuration'
+		. (Join-Path $ConfigFolder 'New-WSBConfig.ps1')
+		. (Join-Path $ConfigFolder 'New-PreLogonScriptContent.ps1')
+	}
+
+	It "launches the bootstrap for a package folder containing spaces and punctuation" {
+		$FolderName = 'Install Bob''s App & Tools [QA]'
+		$BinFolder = Join-Path $TestDrive 'bin'
+		$PackageFolder = Join-Path $TestDrive $FolderName
+		New-Item -Path $BinFolder, $PackageFolder -ItemType Directory | Out-Null
+		$PreLogonPath = Join-Path $BinFolder "${FolderName}_PreLogonCommand.ps1"
+		$LogonPath = Join-Path $BinFolder "${FolderName}_LogonCommand.ps1"
+
+		$WsbPath = Join-Path $TestDrive "$FolderName.wsb"
+		New-WSBConfig -OutputPath $WsbPath -HostFolder $PackageFolder -BinFolder $BinFolder -PreLogonScriptPath $PreLogonPath | Out-Null
+		$Config = [xml](Get-Content -LiteralPath $WsbPath -Raw)
+		$PreLogonCommand = $Config.Configuration.LogonCommand.Command
+
+		# Run the generated launcher with harmless stand-ins for the guest-only commands.
+		$PreLogon = New-PreLogonScriptContent -SandboxDesktopPath $TestDrive -PackageFolderName $FolderName
+		Set-Content -LiteralPath $PreLogonPath -Value $PreLogon -Encoding UTF8
+		Set-Content -LiteralPath (Join-Path $BinFolder 'New-ToastNotification.ps1') -Value 'function New-ToastNotification { Write-Host "toast helper reached" }'
+		Set-Content -LiteralPath $LogonPath -Value 'New-ToastNotification; throw "logon error recorded"'
+
+		$Process = [System.Diagnostics.ProcessStartInfo]::new()
+		$Process.FileName = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+		$Process.Arguments = $PreLogonCommand -replace '^powershell\.exe ', ''
+		$Process.UseShellExecute = $false
+		$Process.RedirectStandardError = $true
+		$Process.RedirectStandardOutput = $true
+		$Child = [System.Diagnostics.Process]::Start($Process)
+		try {
+			if (!$Child.WaitForExit(15000)) {
+				Stop-Process -Id $Child.Id
+				throw 'The generated launcher did not finish within 15 seconds.'
+			}
+			$Child.ExitCode | Should -Not -Be 0
+			$Child.StandardError.ReadToEnd() | Should -Match 'logon error recorded'
+		}
+		finally {
+			$Child.Dispose()
+		}
+
+		$Transcript = Get-Content -LiteralPath (Join-Path $TestDrive 'Intune-App-Sandbox-startup.log') -Raw
+		$Transcript | Should -Match 'toast helper reached'
+		$Transcript | Should -Match 'logon error recorded'
+	}
+}
+
 Describe "VS CODE EXTENSION COMPATIBILITY" {
 	It "accepts the extension's package path and user-context arguments" {
 		$ScriptPath = Join-Path $PSScriptRoot '..\Intune-App-Sandbox\Configuration\Invoke-Test.ps1'

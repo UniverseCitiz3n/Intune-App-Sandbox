@@ -17,11 +17,11 @@ function New-LogonScriptContent {
     $ToastNotificationPath = $Params.ToastNotificationPath
     $ToastTitle = $Params.ToastTitle
     $SandboxTempFolder = $Params.SandboxTempFolder
-    $FullStartupPath = $Params.FullStartupPath
+    $FullStartupPathLiteral = $Params.FullStartupPath.Replace("'", "''")
     $SandboxDesktopPath = $Params.SandboxDesktopPath
-    $FileName = $Params.FileName
-    $FileNameZIP = $Params.FileNameZIP
-    $FileNameRun = $Params.FileNameRun
+    $FileNameLiteral = $Params.FileName.Replace("'", "''")
+    $FileNameZIPLiteral = $Params.FileNameZIP.Replace("'", "''")
+    $InstallerPathLiteral = "$SandboxTempFolder\$($Params.FileNameRun)".Replace("'", "''")
     $PackageFolderName = $Params.PackageFolderName
     $RunAsUser = $Params.RunAsUser
     $ScheduledTaskUser = if ($RunAsUser) { 'WDAGUtilityAccount' } else { 'SYSTEM' }
@@ -35,12 +35,17 @@ If (!(Test-Path -Path $SandboxTempFolder -PathType Container))
 {
     New-Item -Path $SandboxTempFolder -ItemType Directory
 }
-Copy-Item -Path $FullStartupPath -Destination $SandboxTempFolder
-`$Decoder = Start-Process -FilePath $SandboxDesktopPath\bin\IntuneWinAppUtilDecoder.exe -ArgumentList "$SandboxTempFolder\$FileName /s" -NoNewWindow -PassThru -Wait
-
-Rename-Item -Path "$SandboxTempFolder\$FileName.decoded" -NewName `'$FileNameZIP`' -Force
-Expand-Archive -Path "$SandboxTempFolder\$FileNameZIP" -Destination $SandboxTempFolder -Force
-Remove-Item -Path "$SandboxTempFolder\$FileNameZIP" -Force
+Copy-Item -LiteralPath '$FullStartupPathLiteral' -Destination $SandboxTempFolder
+`$LocalPackagePath = Join-Path '$SandboxTempFolder' '$FileNameLiteral'
+`$Decoder = Start-Process -FilePath $SandboxDesktopPath\bin\IntuneWinAppUtilDecoder.exe -ArgumentList ('"{0}" /s' -f `$LocalPackagePath) -NoNewWindow -PassThru -Wait
+`$DecodedPath = "`$LocalPackagePath.decoded"
+if (!(Test-Path -LiteralPath `$DecodedPath -PathType Leaf)) {
+    throw "Decoder did not produce '`$DecodedPath' (exit code: `$(`$Decoder.ExitCode))."
+}
+Rename-Item -LiteralPath `$DecodedPath -NewName '$FileNameZIPLiteral' -Force
+`$ZipPath = Join-Path '$SandboxTempFolder' '$FileNameZIPLiteral'
+Expand-Archive -LiteralPath `$ZipPath -Destination $SandboxTempFolder -Force
+Remove-Item -LiteralPath `$ZipPath -Force
 New-ToastNotification -XmlPath $ToastNotificationPath\toast.xml -Title '$ToastTitle' -Body 'Decoding finished!'
 # register script as scheduled task
 `$TaskRunnerPath = '$TaskRunnerPathLiteral'
@@ -57,7 +62,7 @@ if (Get-Command -Name New-ToastNotification -ErrorAction SilentlyContinue) {
 
 try {
     `$ToolkitExitCode = 1
-    & "$SandboxTempFolder\$FileNameRun"
+    & '$InstallerPathLiteral'
     `$InstallerSucceeded = `$?
     if (`$LASTEXITCODE -ne `$null) {
         `$ToolkitExitCode = [int]`$LASTEXITCODE
@@ -90,7 +95,7 @@ if (Get-Command -Name New-ToastNotification -ErrorAction SilentlyContinue) {
 
 exit `$ToolkitExitCode
 '@
-Set-Content -Path `$TaskRunnerPath -Value `$TaskRunnerContent -Encoding UTF8 -Force
+Set-Content -LiteralPath `$TaskRunnerPath -Value `$TaskRunnerContent -Encoding UTF8 -Force
 
 `$TaskActionArgument = '-ExecutionPolicy Bypass -File "' + `$TaskRunnerPath + '"'
 `$Trigger = New-ScheduledTaskTrigger -Once -At `$(Get-Date).AddSeconds(15)

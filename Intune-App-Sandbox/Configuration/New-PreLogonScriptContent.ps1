@@ -3,8 +3,8 @@ function New-PreLogonScriptContent {
     .SYNOPSIS
         Generates the pre-logon script content for sandbox initialization.
     .DESCRIPTION
-        Creates the PowerShell script that sets execution policy, loads toast notification
-        function into profile, and launches the main logon script.
+        Creates the PowerShell script that loads the toast helper, runs the main
+        logon script, and records startup errors on the sandbox desktop.
     .PARAMETER SandboxDesktopPath
         The sandbox desktop path (e.g., C:\Users\WDAGUtilityAccount\Desktop).
     .PARAMETER PackageFolderName
@@ -19,10 +19,22 @@ function New-PreLogonScriptContent {
         [string]$PackageFolderName
     )
 
+    $DesktopLiteral = $SandboxDesktopPath.Replace("'", "''")
+    $LogonScriptLiteral = "${PackageFolderName}_LogonCommand.ps1".Replace("'", "''")
+
     @"
-Set-ExecutionPolicy Bypass -Force;
-new-item `$PSHOME\Profile.ps1;
-Set-Content -Path `$PSHOME\Profile.ps1 -Value '. $SandboxDesktopPath\bin\New-ToastNotification.ps1';
-powershell -file '$SandboxDesktopPath\bin\${PackageFolderName}_LogonCommand.ps1'
+`$ErrorActionPreference = 'Stop'
+Start-Transcript -LiteralPath (Join-Path '$DesktopLiteral' 'Intune-App-Sandbox-startup.log') | Out-Null
+try {
+    . (Join-Path `$PSScriptRoot 'New-ToastNotification.ps1')
+    & (Join-Path `$PSScriptRoot '$LogonScriptLiteral')
+}
+catch {
+    Write-Error -ErrorRecord `$_ -ErrorAction Continue
+    throw
+}
+finally {
+    Stop-Transcript | Out-Null
+}
 "@
 }

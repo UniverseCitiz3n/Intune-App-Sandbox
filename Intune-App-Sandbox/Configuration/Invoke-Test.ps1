@@ -12,7 +12,10 @@
 #>
 param(
     [Parameter(Mandatory)]
-    [String]$PackagePath
+    [String]$PackagePath,
+
+    [Parameter()]
+    [Switch]$RunAsUser
 )
 
 #region Import Helpers
@@ -68,6 +71,7 @@ $LogonScriptParams = @{
     FileNameZIP           = $FileNameZIP
     FileNameRun           = $FileNameRun
     PackageFolderName     = $PackageFolderName
+    RunAsUser             = $RunAsUser.IsPresent
 }
 
 $LogonScriptContent = New-LogonScriptContent -Params $LogonScriptParams

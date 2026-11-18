@@ -12,7 +12,7 @@ A PowerShell module that enables you to pack and test [Win32 Content Prep Tool](
 
 - **One-click packaging** — Right-click any folder to create `.intunewin` packages
 - **Isolated testing** — Run packages in Windows Sandbox without affecting your system
-- **SYSTEM context execution** — Scripts run as SYSTEM user, mimicking real Intune deployments
+- **SYSTEM and user-context execution** — Test packages as SYSTEM or as the Sandbox user
 - **PSADT support** — Automatic detection of PowerShell App Deployment Toolkit (v3 & v4) packages
 - **Exit code capture** — Retrieve `$LASTEXITCODE` from script execution for validation
 - **Toast notifications** — Visual progress feedback inside the Sandbox
@@ -49,7 +49,8 @@ This will:
 You can choose which context menu items to install:
 | Option | Description |
 |--------|-------------|
-| **Run test in Sandbox** | Test `.intunewin` files in Windows Sandbox |
+| **Run test in Sandbox (SYSTEM)** | Test `.intunewin` files as SYSTEM |
+| **Run test in Sandbox (User)** | Test `.intunewin` files as `WDAGUtilityAccount` |
 | **Pack with IntunewinUtil** | Package folders into `.intunewin` format |
 | **Both** | Install both options (recommended) |
 
@@ -80,11 +81,13 @@ Update-SandboxShell
 
 ### Testing a Package
 
-1. Right-click the `.intunewin` file → **Run test in Sandbox**
+1. Right-click the `.intunewin` file → **Run test in Sandbox (SYSTEM)** or **Run test in Sandbox (User)**
 
-2. Windows Sandbox launches and executes your script as SYSTEM
+2. Windows Sandbox launches and executes your script in the selected context
 
 3. Review the results in the Sandbox environment
+
+The VS Code extension can also launch `Invoke-Test.ps1` directly. Its `-PackagePath` parameter and optional `-RunAsUser` switch remain supported.
 
 ![Test](testsandbox.gif)
 

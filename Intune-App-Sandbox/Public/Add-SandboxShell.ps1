@@ -100,6 +100,8 @@ To correctly create intunewin package, please name parent folder as the same as 
             Write-Host "And place it in: $SandboxOperatingFolder" -ForegroundColor Yellow
             Break
         }
+    } else {
+        Get-ChildItem -Path $PathModule\Configuration\* -Exclude 'IntuneWinAppUtil.exe' | Copy-Item -Destination $SandboxOperatingFolder -Recurse -Force
     }
     Write-Host "
 Contex menu options:
